@@ -32,3 +32,6 @@ Thumbs.db
 
 # Tests / couverture
 coverage/
+
+# Aperçu web généré
+dist-app/
