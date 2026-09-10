@@ -37,6 +37,11 @@ const MIME = {
 };
 
 const server = http.createServer((req, res) => {
+  const started = Date.now();
+  res.on('finish', () => {
+    // Journal compact : permet de vérifier que les navigateurs atteignent bien le serveur.
+    console.log(`${new Date().toISOString().slice(11, 19)} ${req.method} ${req.url} -> ${res.statusCode} (${Date.now() - started} ms)`);
+  });
   try {
     const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
     let filePath = path.normalize(path.join(ROOT, urlPath));
