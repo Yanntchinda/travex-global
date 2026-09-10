@@ -113,7 +113,7 @@ export default function RegisterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: 40 },
+  content: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: 40 },
   introBox: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.accentLight,
     borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg, gap: 10,

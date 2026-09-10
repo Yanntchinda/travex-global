@@ -296,7 +296,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   screenContent: {
-    padding: spacing.lg,
+    paddingHorizontal: '5%',
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xxl * 2,
   },
 });

@@ -249,12 +249,12 @@ export default function AdminScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, marginHorizontal: spacing.lg },
+  tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, marginHorizontal: '5%' },
   tab: { flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' },
   tabActive: { borderBottomWidth: 3, borderBottomColor: colors.primary },
   tabText: { fontSize: 14, color: colors.text },
   tabTextActive: { color: colors.primary, fontWeight: '700' },
-  list: { padding: spacing.lg },
+  list: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: spacing.lg },
   card: { backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm, ...shadow.card },
   iconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   profileAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },

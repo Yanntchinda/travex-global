@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   },
   headerBtn: { width: 40, alignItems: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '700', color: colors.primaryDark },
-  content: { padding: spacing.lg },
+  content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   intro: { fontSize: 15, color: colors.text, lineHeight: 22, marginBottom: spacing.xl },
   checkRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: spacing.sm },
   checkText: { flex: 1, marginLeft: spacing.sm, fontSize: 15, color: colors.text, lineHeight: 22 },

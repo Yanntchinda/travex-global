@@ -89,7 +89,7 @@ export default function RatingsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg },
+  content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   avgCard: {
     backgroundColor: colors.inputBg, borderRadius: radius.lg, padding: spacing.xl,
     marginBottom: spacing.lg, ...shadow.card,

@@ -33,7 +33,7 @@ export default function NotificationSettingsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg },
+  content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   section: {
     backgroundColor: colors.inputBg, borderRadius: radius.lg, padding: spacing.lg, ...shadow.card,
   },

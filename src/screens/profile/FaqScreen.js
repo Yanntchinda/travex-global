@@ -31,7 +31,7 @@ export default function FaqScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  content: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: spacing.xxl },
   item: {
     backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.lg,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,

@@ -6,7 +6,7 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { EmptyState, Badge } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { fetchUserAnnouncements } from '../../services/supabase';
+import { fetchUserAnnouncements, setAnnouncementHidden } from '../../services/supabase';
 
 export default function AnnoncesScreen({ navigation }) {
   const { user } = useAuth();
@@ -18,6 +18,12 @@ export default function AnnoncesScreen({ navigation }) {
     const list = await fetchUserAnnouncements(user?.email);
     setItems(list);
   }, [user?.email]);
+
+  // Masque / réaffiche une annonce — action réservée au propriétaire (ici).
+  const toggleHidden = async (a) => {
+    await setAnnouncementHidden(a.id, !a.hidden);
+    load();
+  };
 
   // Recharge à chaque retour sur l'onglet : la publication apparaît immédiatement.
   useEffect(() => {
@@ -68,22 +74,33 @@ export default function AnnoncesScreen({ navigation }) {
           />
         )}
         {list.map((a) => (
-          <View key={a.id} style={styles.card}>
+          <View key={a.id} style={[styles.card, a.hidden && styles.cardHidden]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={styles.iconBox}><Ionicons name={a.isDemande ? 'trending-up' : 'airplane'} size={20} color={a.isDemande ? colors.accent : colors.primary} /></View>
               <View style={{ flex: 1, marginLeft: spacing.md }}>
                 <Text style={styles.route}>{a.from} → {a.to}</Text>
                 <Text style={styles.meta}>{a.transport ? a.transport + ' · ' : ''}{a.date}</Text>
               </View>
+              {/* Masquer / réafficher : uniquement ici, dans le profil de l'utilisateur */}
+              <TouchableOpacity style={styles.hideBtn} onPress={() => toggleHidden(a)} activeOpacity={0.8}>
+                <Ionicons name={a.hidden ? 'eye' : 'eye-off'} size={18} color={a.hidden ? colors.green : colors.muted} />
+                <Text style={[styles.hideText, a.hidden && { color: colors.green }]}>
+                  {a.hidden ? t('lists.unhide') : t('lists.hide')}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={{ marginTop: spacing.md }}>
+            <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <Badge
                 label={a.status === 'attente' ? t('publish.pending') : t('publish.verified')}
                 color={a.status === 'attente' ? '#FCF3DF' : '#ECFDF5'}
                 textColor={a.status === 'attente' ? '#8A5B12' : '#047857'}
                 icon={a.status === 'attente' ? 'time' : 'checkmark-circle'}
               />
+              {a.hidden && (
+                <Badge label={t('lists.hidden')} color="#EEF1F5" textColor={colors.muted} icon="eye-off" />
+              )}
             </View>
+            {a.hidden && <Text style={styles.hiddenDesc}>{t('lists.hiddenDesc')}</Text>}
           </View>
         ))}
       </ScrollView>
@@ -93,15 +110,19 @@ export default function AnnoncesScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  title: { fontSize: 22, fontWeight: '800', color: colors.primaryDark, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, marginHorizontal: spacing.lg },
+  title: { fontSize: 22, fontWeight: '800', color: colors.primaryDark, paddingHorizontal: '5%', paddingVertical: spacing.md },
+  tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, marginHorizontal: '5%' },
   tab: { flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' },
   tabActive: { borderBottomWidth: 3, borderBottomColor: colors.primary },
   tabText: { fontSize: 14, color: colors.text },
   tabTextActive: { color: colors.primary, fontWeight: '700' },
-  list: { padding: spacing.lg },
+  list: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   card: { backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm, ...shadow.card },
+  cardHidden: { opacity: 0.75, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.border },
   iconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   route: { fontSize: 16, fontWeight: '700', color: colors.text },
   meta: { fontSize: 13, color: colors.muted, marginTop: 3 },
+  hideBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 12, backgroundColor: colors.inputBg },
+  hideText: { fontSize: 12, fontWeight: '800', color: colors.muted },
+  hiddenDesc: { fontSize: 12, color: colors.muted, marginTop: spacing.sm, fontStyle: 'italic' },
 });

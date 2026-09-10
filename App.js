@@ -40,6 +40,8 @@ import ProfileScreen from './src/screens/tabs/ProfileScreen';
 // Détail & autres écrans
 import TripDetailScreen from './src/screens/detail/TripDetailScreen';
 import DemandDetailScreen from './src/screens/detail/DemandDetailScreen';
+import TravelerProfileScreen from './src/screens/detail/TravelerProfileScreen';
+import ReportScreen from './src/screens/report/ReportScreen';
 import PublishTripScreen from './src/screens/publish/PublishTripScreen';
 import PersonalInfoScreen from './src/screens/profile/PersonalInfoScreen';
 import PaymentScreen from './src/screens/profile/PaymentScreen';
@@ -95,6 +97,8 @@ function RootNavigator() {
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="TripDetail" component={TripDetailScreen} />
       <Stack.Screen name="DemandDetail" component={DemandDetailScreen} />
+      <Stack.Screen name="TravelerProfile" component={TravelerProfileScreen} />
+      <Stack.Screen name="Report" component={ReportScreen} />
       <Stack.Screen name="PublishTrip" component={PublishTripScreen} />
       <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
       <Stack.Screen name="Admin" component={AdminScreen} />

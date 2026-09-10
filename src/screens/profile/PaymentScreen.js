@@ -43,7 +43,7 @@ export default function PaymentScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg },
+  content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   title: { fontSize: 18, fontWeight: '700', color: colors.primaryDark, marginBottom: spacing.md },
   option: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,

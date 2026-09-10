@@ -10,6 +10,7 @@ import { TripCard } from '../../components/trip';
 import { DemandCard } from '../../components/demand';
 import { Loading, EmptyState } from '../../components/common';
 import { fetchTrips, getNotifications } from '../../services/supabase';
+import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CITIES } from '../../data/mockData';
@@ -215,7 +216,7 @@ export default function HomeScreen({ navigation }) {
                 key={item.id}
                 trip={item}
                 onPress={() => navigation.navigate('TripDetail', { id: item.id })}
-                onShare={() => {}}
+                onShare={() => shareListing(item, t)}
               />
             ) : (
               <DemandCard
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   scroll: { paddingBottom: 110 },
   hero: {
-    marginHorizontal: spacing.lg, marginTop: spacing.md, borderRadius: radius.lg,
+    marginHorizontal: '5%', marginTop: spacing.md, borderRadius: radius.lg,
     height: 190, overflow: 'hidden', ...shadow.card,
   },
   heroImage: { width: '100%', height: '100%' },
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
   slideDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.5)' },
   slideDotActive: { backgroundColor: colors.white, width: 18 },
   tabs: {
-    flexDirection: 'row', marginHorizontal: spacing.lg, marginTop: spacing.md,
+    flexDirection: 'row', marginHorizontal: '5%', marginTop: spacing.md,
     backgroundColor: colors.card, borderRadius: 30, padding: 5, ...shadow.card,
   },
   tab: {
@@ -290,7 +291,7 @@ const styles = StyleSheet.create({
   tabTextActive: { color: colors.white },
   search: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.card, marginHorizontal: spacing.lg, marginTop: spacing.md,
+    backgroundColor: colors.card, marginHorizontal: '5%', marginTop: spacing.md,
     marginBottom: spacing.md, // micro espace avant la première publication
     borderRadius: radius.xl, paddingHorizontal: spacing.lg, height: 52, ...shadow.card,
   },

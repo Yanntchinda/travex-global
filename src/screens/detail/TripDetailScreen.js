@@ -9,16 +9,18 @@ import { ScreenHeader, Stars, Badge, Loading, Button, RatingInput } from '../../
 import { CountryFlag, TransportIcon, RouteLine, CategoryChips, PricePerKg, CapacityGauge } from '../../components/trip';
 import Slider from '../../components/Slider';
 import { fetchTripDetail, bookKg, rateTarget, ensureConversation } from '../../services/supabase';
+import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import Gate from '../../components/Gate';
 
-function OptionSheet({ visible, onClose }) {
+function OptionSheet({ visible, onClose, onChoose, t }) {
+  // « Masquer l'annonce » n'apparaît plus ici : le masquage se gère
+  // uniquement depuis l'onglet « Mes annonces » du profil de l'utilisateur.
   const options = [
-    { icon: 'person-outline', label: 'Voir le profil' },
-    { icon: 'share-social-outline', label: 'Partager l\u2019annonce' },
-    { icon: 'eye-off-outline', label: 'Masquer l\u2019annonce' },
-    { icon: 'flag-outline', label: 'Signaler l\u2019utilisateur', danger: true },
+    { key: 'profile', icon: 'person-outline', label: t('traveler.title') },
+    { key: 'share', icon: 'share-social-outline', label: t('announce.share') },
+    { key: 'report', icon: 'flag-outline', label: t('report.title'), danger: true },
   ];
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
@@ -26,7 +28,7 @@ function OptionSheet({ visible, onClose }) {
         <View style={styles.sheet}>
           <View style={styles.sheetHandle} />
           {options.map((o, i) => (
-            <TouchableOpacity key={i} style={styles.optionRow} onPress={() => onClose()}>
+            <TouchableOpacity key={i} style={styles.optionRow} onPress={() => { onClose(); onChoose(o.key); }}>
               <Ionicons name={o.icon} size={22} color={o.danger ? colors.red : colors.primary} />
               <Text style={[styles.optionText, o.danger && { color: colors.red }]}>{o.label}</Text>
             </TouchableOpacity>
@@ -134,13 +136,31 @@ export default function TripDetailScreen({ route, navigation }) {
     }
   };
 
+  // Profil public du voyageur (avec ses références).
+  const openTravelerProfile = () => {
+    navigation.navigate('TravelerProfile', { traveler, travelerId: detail.travelerId || id });
+  };
+
+  // Actions de la feuille d'options (⋯) : profil, partage, signalement.
+  const onOption = (key) => {
+    if (key === 'profile') openTravelerProfile();
+    if (key === 'share') shareListing({ ...detail, ...r }, t);
+    if (key === 'report') {
+      navigation.navigate('Report', {
+        reportedName: traveler?.name,
+        reportedId: detail.travelerId || id,
+        context: `${r.from} → ${r.to}`,
+      });
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScreenHeader title={t('announce.details')} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Transporteur */}
-        <View style={styles.card}>
+        {/* Transporteur — carte cliquable : ouvre le profil du voyageur */}
+        <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={openTravelerProfile}>
           <View style={styles.travelerRow}>
             <View style={styles.avatar}>
               {traveler.avatar ? (
@@ -165,7 +185,7 @@ export default function TripDetailScreen({ route, navigation }) {
               <Ionicons name="ellipsis-vertical" size={20} color={colors.text} />
             </TouchableOpacity>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Trajet */}
         <View style={styles.card}>
@@ -283,7 +303,7 @@ export default function TripDetailScreen({ route, navigation }) {
         />
       </View>
 
-      <OptionSheet visible={sheet} onClose={() => setSheet(false)} />
+      <OptionSheet visible={sheet} onClose={() => setSheet(false)} onChoose={onOption} t={t} />
 
       {/* Confirmation de réservation in-app */}
       <Modal transparent visible={!!bookedInfo} animationType="fade" onRequestClose={() => setBookedInfo(null)}>
@@ -306,7 +326,7 @@ export default function TripDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  content: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: spacing.xxl },
   card: {
     backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,

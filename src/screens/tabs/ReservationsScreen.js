@@ -34,7 +34,7 @@ function CloseBtn({ onPress }) {
 }
 
 // ---------- Modale Scanner (caméra + galerie) ----------
-function ScannerModal({ visible, onClose, onScan }) {
+function ScannerModal({ visible, onClose, onScan, shipment }) {
   const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const runScan = (msg) => {
@@ -79,6 +79,13 @@ function ScannerModal({ visible, onClose, onScan }) {
           <CloseBtn onPress={onClose} />
           <Text style={c.scanTitle}>{t('track.validatePickup')}</Text>
           <Text style={c.scanSub}>{t('track.scanDesc')}</Text>
+          {shipment && shipment.ref ? (
+            <View style={c.expectedBox}>
+              <Ionicons name="qr-code" size={16} color={colors.primary} />
+              <Text style={c.expectedLabel}>{t('track.scanExpected')}</Text>
+              <Text style={c.expectedRef}>{shipment.ref}</Text>
+            </View>
+          ) : null}
           <View style={c.scanFrame}>
             <Text style={c.scanFrameText}>{busy ? t('track.scanAnalyze') : t('track.scanning')}</Text>
             <Ionicons name="qr-code" size={64} color="#4B5563" />
@@ -171,6 +178,10 @@ function QrModal({ visible, onClose, shipment }) {
             <QRCode value={shipment.qrData || 'GP-SAFE-0000'} size={150} color="#123A69" backgroundColor="#F8FAFC" />
             <Text style={c.qrLabel}>{t('track.qrParcelRef')}</Text>
             <Text style={c.qrRef}>{shipment.ref}</Text>
+          </View>
+          <View style={c.qrHintBox}>
+            <Ionicons name="information-circle" size={16} color="#1D4ED8" />
+            <Text style={c.qrHintText}>{t('track.qrHint')}</Text>
           </View>
           <View style={c.qrActions}>
             <TouchableOpacity style={c.qrGhost} onPress={() => Alert.alert(t('track.download'), t('track.savedGallery'))}>
@@ -451,14 +462,14 @@ export default function ReservationsScreen() {
               item={it}
               onViewQR={setQrFor}
               onChat={setChatFor}
-              onScan={onScan}
+              onScan={setScanner}
               onEnterPin={onEnterPin}
             />
           ))
         )}
       </ScrollView>
 
-      <ScannerModal visible={!!scanner} onClose={() => setScanner(null)} onScan={() => onScan(scanner)} />
+      <ScannerModal visible={!!scanner} onClose={() => setScanner(null)} onScan={() => onScan(scanner)} shipment={scanner} />
       <PinModal visible={!!pinFor} onClose={() => setPinFor(null)} onValidate={() => onEnterPin(pinFor)} />
       <QrModal visible={!!qrFor} onClose={() => setQrFor(null)} shipment={qrFor} />
       <ChatModal visible={!!chatFor} onClose={() => setChatFor(null)} name={chatFor?.counterparty?.name} />
@@ -468,12 +479,12 @@ export default function ReservationsScreen() {
 
 const c = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  headerTitle: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  headerTitle: { paddingHorizontal: '5%', paddingTop: spacing.md, paddingBottom: spacing.sm },
   title: { fontSize: 24, fontWeight: '900', color: colors.primaryDark },
   subtitle: { fontSize: 13, color: colors.muted, marginTop: 2 },
   mainTabs: {
     flexDirection: 'row', gap: 8, backgroundColor: colors.white, borderRadius: 18,
-    padding: 6, marginHorizontal: spacing.lg, ...shadow.card,
+    padding: 6, marginHorizontal: '5%', ...shadow.card,
   },
   mainTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 46, borderRadius: 14, paddingHorizontal: 4 },
   mainTabActive: { backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
@@ -483,12 +494,12 @@ const c = StyleSheet.create({
   countPillActive: { backgroundColor: 'rgba(255,255,255,0.25)' },
   countPillIdle: { backgroundColor: colors.inputBg },
   countPillText: { fontSize: 11, fontWeight: '800', color: colors.muted },
-  filtersRow: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, overflow: 'hidden' },
+  filtersRow: { flexDirection: 'row', gap: 8, paddingHorizontal: '5%', paddingVertical: spacing.md, overflow: 'hidden' },
   filterChip: { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 12, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   filterChipActive: { backgroundColor: colors.primaryDark, borderColor: colors.primaryDark },
   filterText: { fontSize: 12, fontWeight: '700', color: colors.muted },
   filterTextActive: { color: colors.white },
-  list: { padding: spacing.lg, paddingBottom: 110 },
+  list: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: 110 },
   scanOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.85)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   scanCard: { backgroundColor: colors.white, borderRadius: 28, width: '100%', maxWidth: 400, padding: spacing.xl, alignItems: 'center', ...shadow.card },
   scanTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginTop: spacing.md, textAlign: 'center' },
@@ -510,6 +521,19 @@ const c = StyleSheet.create({
   qrBox: { backgroundColor: '#F8FAFC', borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, alignItems: 'center', marginVertical: spacing.lg, width: '100%' },
   qrLabel: { fontSize: 10, color: colors.muted, textTransform: 'uppercase', fontWeight: '800', letterSpacing: 0.8, marginTop: spacing.md },
   qrRef: { fontSize: 16, fontWeight: '900', color: colors.text, marginTop: 4 },
+  qrHintBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EFF6FF',
+    borderWidth: 1, borderColor: '#DBEAFE', borderRadius: 12,
+    paddingHorizontal: spacing.md, paddingVertical: 10, marginBottom: spacing.md, width: '100%',
+  },
+  qrHintText: { flex: 1, fontSize: 12, color: '#1D4ED8', fontWeight: '600', lineHeight: 17 },
+  expectedBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.inputBg,
+    borderRadius: 12, paddingHorizontal: spacing.md, paddingVertical: 8,
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
+  },
+  expectedLabel: { fontSize: 11, color: colors.muted, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  expectedRef: { fontSize: 15, fontWeight: '900', color: colors.primary },
   qrActions: { flexDirection: 'row', gap: 8, width: '100%' },
   qrGhost: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 44, borderRadius: 14, backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border },
   qrGhostText: { color: colors.text, fontWeight: '800', fontSize: 12 },

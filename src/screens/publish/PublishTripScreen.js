@@ -337,7 +337,7 @@ export default function PublishTripScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: 40 },
+  content: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: 40 },
   typeBox: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg },
   typeBadge: { fontSize: 12, fontWeight: '800', color: colors.primary, letterSpacing: 1, marginBottom: 4 },
   typeText: { fontSize: 14, color: colors.text, lineHeight: 20 },

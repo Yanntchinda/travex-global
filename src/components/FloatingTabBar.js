@@ -160,7 +160,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
-    paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
+    paddingHorizontal: '5%', paddingBottom: spacing.md,
   },
   container: { position: 'relative', height: 92, justifyContent: 'flex-end' },
   bar: {

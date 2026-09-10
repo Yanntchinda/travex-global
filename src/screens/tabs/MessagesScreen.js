@@ -193,9 +193,9 @@ export default function MessagesScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  title: { fontSize: 22, fontWeight: '800', color: colors.primaryDark, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  list: { padding: spacing.lg, paddingTop: 0 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: '5%', paddingVertical: spacing.md },
+  title: { fontSize: 22, fontWeight: '800', color: colors.primaryDark, paddingHorizontal: '5%', paddingVertical: spacing.md },
+  list: { paddingHorizontal: '5%', paddingTop: 0, paddingBottom: spacing.lg },
   convo: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
     borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm, ...shadow.card,
@@ -207,14 +207,14 @@ const styles = StyleSheet.create({
   convoTime: { fontSize: 12, color: colors.muted },
   unread: { marginTop: 6, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   unreadText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  chatHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  chatHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: '5%', paddingVertical: spacing.md },
   chatBack: { padding: 4, marginRight: spacing.sm },
   chatAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   chatAvatarText: { color: colors.primary, fontWeight: '800' },
   chatName: { fontSize: 16, fontWeight: '700', color: colors.text },
   chatStatus: { fontSize: 12, color: colors.green, flexDirection: 'row', alignItems: 'center' },
   onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green, marginRight: 4 },
-  chatList: { padding: spacing.lg },
+  chatList: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   // Le corps du chat se termine AU-DESSUS de la barre d'onglets flottante :
   // la zone de saisie reste ainsi toujours visible et accessible.
   chatBody: { flex: 1, paddingBottom: 104 },

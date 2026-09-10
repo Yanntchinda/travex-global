@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   header: {
     backgroundColor: colors.primary, paddingBottom: spacing.xl, paddingTop: spacing.md,
-    paddingHorizontal: spacing.lg, borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
+    paddingHorizontal: '5%', borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
     alignItems: 'center',
   },
   gear: { alignSelf: 'flex-end', padding: 8 },
@@ -228,13 +228,13 @@ const styles = StyleSheet.create({
   loginBtnText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
   banner: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#FCF3DF',
-    marginHorizontal: spacing.lg, marginTop: -16, borderRadius: radius.md, padding: spacing.md,
+    marginHorizontal: '5%', marginTop: -16, borderRadius: radius.md, padding: spacing.md,
     borderWidth: 1, borderColor: '#F0DFB2', zIndex: 2, ...shadow.card,
   },
   bannerText: { color: '#8A5B12', fontWeight: '600', fontSize: 14, marginLeft: 8 },
   verifyBtn: { backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: 8, borderRadius: 20 },
   verifyText: { color: colors.white, fontWeight: '700', fontSize: 13 },
-  menu: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  menu: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: spacing.xxl },
   menuRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
     padding: spacing.lg, borderRadius: radius.md, marginBottom: spacing.sm, ...shadow.card,

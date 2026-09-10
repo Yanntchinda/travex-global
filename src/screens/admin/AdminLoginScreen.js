@@ -56,7 +56,7 @@ export default function AdminLoginScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, alignItems: 'stretch' },
+  content: { paddingHorizontal: '5%', paddingVertical: spacing.lg, alignItems: 'stretch' },
   iconWrap: { alignSelf: 'center', width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginVertical: spacing.xl },
   title: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
   sub: { fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: spacing.xl, lineHeight: 21 },

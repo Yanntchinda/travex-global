@@ -22,6 +22,7 @@ const KEY_NOTIFS = 'travex.notifications'; // notifications in-app
 const KEY_PROPOSALS = 'travex.proposals'; // propositions de voyageurs sur une demande
 const KEY_SHIPMENTS = 'travex.shipments'; // colis à suivre (expéditeur / voyageur)
 const KEY_CONVERSATIONS = 'travex.conversations'; // conversations de messagerie
+const KEY_REPORTS = 'travex.reports'; // signalements d'utilisateurs (preuves + raison)
 
 // ============ COMPTES PRÉCONFIGURÉS (admin + compte vérifié) ============
 // Accès de test fournis à l'utilisateur.
@@ -204,6 +205,8 @@ export async function fetchTrips() {
   const seeded = await ensureRatingsSeeded();
   const out = [];
   for (const a of all) {
+    // Annonce masquée par son propriétaire : invisible sur l'accueil et dans les recherches.
+    if (a.hidden) continue;
     const capacity = Number(a.capacityKg ?? a.weight) || 0;
     const booked = bookings.filter((r) => r.tripId === a.id && r.status === 'active').reduce((s, r) => s + Number(r.kg), 0);
     // Note moyenne du transporteur
@@ -328,6 +331,15 @@ export async function createTrip(trip) {
 export async function fetchUserAnnouncements(email) {
   const published = await localStore.get(KEY_ANNOUNCE, []);
   return published.filter((a) => a.userEmail === email);
+}
+
+// Masque / réaffiche une de SES annonces (visible uniquement dans son profil).
+// Une annonce masquée disparaît de l'accueil et des recherches pour tout le monde.
+export async function setAnnouncementHidden(id, hidden) {
+  const list = await localStore.get(KEY_ANNOUNCE, []);
+  const next = list.map((a) => (a.id === id ? { ...a, hidden: !!hidden } : a));
+  await localStore.set(KEY_ANNOUNCE, next);
+  return next;
 }
 
 // ---------- Réservations (kg × tarif, annulable) ----------
@@ -818,4 +830,28 @@ export async function ensureConversation({ name, initials, last, time, id }) {
   list.unshift(convo);
   await localStore.set(KEY_CONVERSATIONS, list);
   return convo;
+}
+
+// ---------- Signalements d'utilisateurs ----------
+// Un signalement contient : la personne signalée, la raison rédigée et des
+// preuves d'échange (photos / captures d'écran, jusqu'à 3).
+export async function createReport({ against, againstId, reason, proofs, context }) {
+  const list = await localStore.get(KEY_REPORTS, []);
+  const report = {
+    id: 'rep_' + Date.now(),
+    against: against || 'Utilisateur',
+    againstId: againstId || null,
+    reason: reason || '',
+    proofs: (proofs || []).filter(Boolean),
+    context: context || null,
+    status: 'sent',
+    createdAt: Date.now(),
+  };
+  list.unshift(report);
+  await localStore.set(KEY_REPORTS, list);
+  return report;
+}
+
+export async function getReports() {
+  return await localStore.get(KEY_REPORTS, []);
 }

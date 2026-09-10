@@ -59,7 +59,7 @@ export default function SupportScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg },
+  content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   section: { backgroundColor: colors.inputBg, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card },
   sectionHead: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.primaryDark, marginLeft: 8 },

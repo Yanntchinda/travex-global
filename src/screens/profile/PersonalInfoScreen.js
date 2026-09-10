@@ -79,7 +79,7 @@ export default function PersonalInfoScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg },
+  content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   label: { fontSize: 14, color: colors.text, fontWeight: '600', marginBottom: spacing.md },
   avatarRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,

@@ -31,7 +31,7 @@ export default function TermsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  content: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: spacing.xxl },
   intro: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryLight,
     borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.lg, gap: 10,

@@ -86,7 +86,7 @@ export default function NotificationsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg },
+  content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   item: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
     borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm,
