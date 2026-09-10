@@ -16,7 +16,10 @@ const path = require('path');
 const zlib = require('zlib');
 
 const PORT = process.env.PORT || 8080;
-const ROOT = path.join(__dirname, '..', 'dist');
+// dist-app/ = build avec un chemin de script simplifié (/app.js au lieu de
+// /_expo/static/js/web/...). Certains proxys d'aperçu bloquent ou filtrent les
+// chemins commençant par /_expo, ce qui laisse la page blanche.
+const ROOT = path.join(__dirname, '..', 'dist-app');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
