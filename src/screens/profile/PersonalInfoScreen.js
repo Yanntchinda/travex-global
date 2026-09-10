@@ -57,7 +57,7 @@ export default function PersonalInfoScreen({ navigation }) {
             label="Ajouter / changer la photo"
             value={avatar}
             onChange={setAvatar}
-            placeholder="Uploadez votre photo de profil"
+            placeholder="Téléversez votre photo de profil"
           />
         </View>
 

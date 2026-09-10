@@ -16,10 +16,18 @@ function Conversation({ convo, onBack }) {
   const [draft, setDraft] = useState('');
   const [seen, setSeen] = useState(false); // accusé de lecture : "vu" par l'autre
   const listRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Simulation : une fois la conversation ouverte, l'autre a lu vos messages.
   useEffect(() => {
     const timer = setTimeout(() => setSeen(true), 900);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // À l'ouverture d'une conversation : le curseur se place automatiquement sur
+  // la zone de saisie et le clavier sort pour permettre de rédiger directement.
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 350);
     return () => clearTimeout(timer);
   }, []);
 
@@ -48,13 +56,14 @@ function Conversation({ convo, onBack }) {
         <Ionicons name="call-outline" size={20} color={colors.primary} />
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chatBody}>
         <FlatList
           ref={listRef}
           data={messages}
           keyExtractor={(m) => m.id}
           contentContainerStyle={styles.chatList}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
           renderItem={({ item }) => {
             const mine = item.from === 'me';
@@ -77,6 +86,7 @@ function Conversation({ convo, onBack }) {
         />
         <View style={styles.inputRow}>
           <TextInput
+            ref={inputRef}
             style={styles.input}
             placeholder={t('msg.placeholder')}
             placeholderTextColor="#9AA3AF"
@@ -205,6 +215,9 @@ const styles = StyleSheet.create({
   chatStatus: { fontSize: 12, color: colors.green, flexDirection: 'row', alignItems: 'center' },
   onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green, marginRight: 4 },
   chatList: { padding: spacing.lg },
+  // Le corps du chat se termine AU-DESSUS de la barre d'onglets flottante :
+  // la zone de saisie reste ainsi toujours visible et accessible.
+  chatBody: { flex: 1, paddingBottom: 104 },
   bubble: { maxWidth: '78%', borderRadius: 18, padding: spacing.md, marginBottom: spacing.sm },
   bubbleMe: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   bubbleThem: { alignSelf: 'flex-start', backgroundColor: colors.white, borderBottomLeftRadius: 4, ...shadow.card },

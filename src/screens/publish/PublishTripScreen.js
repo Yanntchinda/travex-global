@@ -192,7 +192,7 @@ export default function PublishTripScreen({ route, navigation }) {
             <PhotoPicker
               value={ticketPhoto}
               onChange={setTicketPhoto}
-              placeholder="Uploadez votre billet ou réservation de vol"
+              placeholder="Téléversez votre billet ou réservation de vol"
               hint="Obligatoire — l'annonce reste « en attente de confirmation » tant qu'un administrateur ne l'a pas validée"
             />
 

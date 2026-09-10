@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Dimensions, Platform,
+  View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { subscribeNotifications, getLatestUnread } from '../services/supabase';
@@ -17,6 +17,9 @@ const COMPACT = { w: 22, h: 22, r: 11 }; // taille d'ouverture (rond), invisible
 const SCREEN_W = Dimensions.get('window').width;
 const EXPANDED_W = Math.min(340, SCREEN_W - 40);
 const EXPANDED = { w: EXPANDED_W, h: 68, r: 32 };
+// Décalage vertical de la capsule : elle apparaît quelques centimètres sous le
+// haut de l'écran (sous les en-têtes), sans recouvrir le titre des écrans.
+const TOP_OFFSET = 110;
 
 // Couleur de la pastille d'icône selon le type de notification.
 const TINTS = {
@@ -161,7 +164,7 @@ export default function DynamicIsland({ onPress }) {
 
 const styles = StyleSheet.create({
   host: {
-    position: 'absolute', top: Platform.OS === 'web' ? 10 : 6, left: 0, right: 0,
+    position: 'absolute', top: TOP_OFFSET, left: 0, right: 0,
     alignItems: 'center', zIndex: 9999, elevation: 30,
   },
   island: {

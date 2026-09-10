@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   heroImage: { width: '100%', height: '100%' },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(9, 30, 55, 0.55)', // voile sombre : les textes ressortent
+    backgroundColor: 'rgba(9, 30, 55, 0.35)', // léger voile : les images sombres restent visibles
   },
   heroContent: { position: 'absolute', top: spacing.lg, left: spacing.lg, right: spacing.lg },
   brandSmall: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '800', letterSpacing: 1.4 },

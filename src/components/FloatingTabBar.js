@@ -31,6 +31,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   const routes = state.routes;
   const { t } = useLanguage();
   const [activeIdx, setActiveIdx] = useState(state.index);
+  const [frameWidth, setFrameWidth] = useState(0);
   const anim = useRef(new Animated.Value(state.index)).current;
   const fade = useRef(new Animated.Value(1)).current;
 
@@ -48,7 +49,12 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
     Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }).start();
   }, [state.index]);
 
-  const barWidth = Dimensions.get('window').width - spacing.lg * 2;
+  // Largeur réelle du conteneur mesurée au rendu : dans l'aperçu web
+  // « format téléphone », Dimensions.get('window') renvoie la largeur du
+  // navigateur (pas celle du cadre mobile), d'où la mesure via onLayout.
+  const barWidth = frameWidth > 0
+    ? frameWidth - spacing.lg * 2
+    : Dimensions.get('window').width - spacing.lg * 2;
   const itemWidth = barWidth / routes.length;
   const indicatorSize = 72;
 
@@ -73,7 +79,10 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   });
 
   return (
-    <View style={styles.wrap}>
+    <View
+      style={styles.wrap}
+      onLayout={(e) => setFrameWidth(e.nativeEvent.layout.width)}
+    >
       <View style={styles.container}>
         {/* Encoche courbe (cutout) — suit l'indicateur */}
         <Animated.View

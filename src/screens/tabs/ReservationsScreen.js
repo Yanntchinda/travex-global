@@ -194,7 +194,16 @@ function ChatModal({ visible, onClose, name }) {
   const [messages, setMessages] = useState([{ me: false, text: 'Bonjour ! Où souhaitez-vous que nous nous retrouvions pour la remise du colis ?' }]);
   const [draft, setDraft] = useState('');
   const listRef = useRef(null);
-  useEffect(() => { setMessages([{ me: false, text: 'Bonjour ! Où souhaitez-vous que nous nous retrouvions pour la remise du colis ?' }]); setDraft(''); }, [visible]);
+  const inputRef = useRef(null);
+  useEffect(() => {
+    setMessages([{ me: false, text: 'Bonjour ! Où souhaitez-vous que nous nous retrouvions pour la remise du colis ?' }]);
+    setDraft('');
+    // Curseur placé automatiquement sur la zone de saisie à l'ouverture.
+    if (visible) {
+      const timer = setTimeout(() => inputRef.current?.focus(), 350);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
   const send = () => {
     if (!draft.trim()) return;
     setMessages((m) => [...m, { me: true, text: draft.trim() }]);
@@ -224,6 +233,7 @@ function ChatModal({ visible, onClose, name }) {
           </ScrollView>
           <View style={c.chatInputRow}>
             <TextInput
+              ref={inputRef}
               style={c.chatInput}
               placeholder="Écrivez votre message..."
               placeholderTextColor="#9AA3AF"

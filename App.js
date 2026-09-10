@@ -33,7 +33,7 @@ import RegisterScreen from './src/screens/auth/RegisterScreen';
 // Onglets
 import HomeScreen from './src/screens/home/HomeScreen';
 import ReservationsScreen from './src/screens/tabs/ReservationsScreen';
-import AnoncesScreen from './src/screens/tabs/AnoncesScreen';
+import AnnoncesScreen from './src/screens/tabs/AnnoncesScreen';
 import MessagesScreen from './src/screens/tabs/MessagesScreen';
 import ProfileScreen from './src/screens/tabs/ProfileScreen';
 

@@ -133,7 +133,7 @@ export const mockTrips = [
     weightNeeded: 3,
     budgetPerKg: 15,
     parcelImage: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&q=80&w=400',
-    description: "Documents officiels sous enveloppe scellée étanche. Contient diplômes originaux et retranscriptions de notes. Remise impérative en main propre contre signature à l'arrivée.",
+    description: "Documents officiels sous enveloppe scellée étanche. Contient diplômes originaux et relevés de notes. Remise impérative en main propre contre signature à l'arrivée.",
     traveler: {
       name: 'Paul Nkam',
       lastName: '',

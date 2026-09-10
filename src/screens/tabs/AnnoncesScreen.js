@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { fetchUserAnnouncements } from '../../services/supabase';
 
-export default function AnoncesScreen({ navigation }) {
+export default function AnnoncesScreen({ navigation }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [tab, setTab] = useState('attente');

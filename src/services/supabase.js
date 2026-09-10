@@ -23,7 +23,7 @@ const KEY_PROPOSALS = 'travex.proposals'; // propositions de voyageurs sur une d
 const KEY_SHIPMENTS = 'travex.shipments'; // colis à suivre (expéditeur / voyageur)
 const KEY_CONVERSATIONS = 'travex.conversations'; // conversations de messagerie
 
-// ============ COMPTES PRÉCONFIGURÉS (admn + compte vérifié) ============
+// ============ COMPTES PRÉCONFIGURÉS (admin + compte vérifié) ============
 // Accès de test fournis à l'utilisateur.
 export const ADMIN_CREDENTIALS = { email: 'admin@travexglobal.com', password: 'Admin123!' };
 export const VERIFIED_CREDENTIALS = { email: 'demo@travexglobal.com', password: 'Demo1234!' };
@@ -622,7 +622,18 @@ export async function createProposal({ demandId, date, kg, pricePerKg, message, 
 // `role` : 'sender' (colis expédié/destinataire) | 'traveler' (colis porté par le voyageur)
 // `status` : 'pending' (en attente de prise en charge) | 'in_transit' (en cours)
 //            | 'landed' (atterri — PIN généré) | 'delivered' (livré)
-function genPin() { return String(Math.floor(1000 + Math.random() * 9000)); }
+// Sécurité : le PIN de livraison est TOUJOURS différent des chiffres de la
+// référence du colis. Le voyageur connaît la référence (via le QR Code) mais
+// ne doit jamais pouvoir en déduire le PIN secret, transmis séparément par
+// l'expéditeur au moment de la livraison.
+function genPin(ref) {
+  const refDigits = String(ref || '').replace(/\D/g, '');
+  let pin = String(Math.floor(1000 + Math.random() * 9000));
+  while (pin === refDigits) {
+    pin = String(Math.floor(1000 + Math.random() * 9000));
+  }
+  return pin;
+}
 function genRef() { return 'GP-' + String(Math.floor(1000 + Math.random() * 9000)); }
 function genQR(ref) { return 'GP-SAFE-' + ref.replace('GP-', ''); }
 
@@ -633,7 +644,8 @@ export async function ensureShipmentsSeeded() {
   const now = Date.now();
   list = [
     {
-      id: 's1', ref: 'GP-8921', qrData: 'GP-SAFE-8921', role: 'sender', status: 'landed', pin: '8921',
+      // Référence publique (QR) GP-8921 — PIN de livraison DIFFÉRENT : 5730.
+      id: 's1', ref: 'GP-8921', qrData: 'GP-SAFE-8921', role: 'sender', status: 'landed', pin: '5730',
       parcel: 'Vêtements & Documents', weight: 5, pricePerKg: 12, total: 60,
       from: 'Douala', to: 'Genève',
       fromCode: 'DLA', toCode: 'GVA', transport: 'Avion',
@@ -641,7 +653,7 @@ export async function ensureShipmentsSeeded() {
       createdAt: now - 86400000,
     },
     {
-      id: 's2', ref: genRef(), qrData: null, role: 'traveler', status: 'pending', pin: null,
+      id: 's2', ref: 'GP-3164', qrData: null, role: 'traveler', status: 'pending', pin: null,
       parcel: 'Effets personnels', weight: 5, pricePerKg: 10, total: 50,
       from: 'Douala', to: 'Paris',
       fromCode: 'DLA', toCode: 'CDG', transport: 'Avion',
@@ -649,7 +661,7 @@ export async function ensureShipmentsSeeded() {
       createdAt: now - 43200000,
     },
     {
-      id: 's3', ref: genRef(), qrData: null, role: 'traveler', status: 'landed', pin: '4623',
+      id: 's3', ref: 'GP-7408', qrData: null, role: 'traveler', status: 'landed', pin: '2915',
       parcel: 'Ndjoka / Épices', weight: 10, pricePerKg: 14, total: 140,
       from: 'Yaoundé', to: 'Genève',
       fromCode: 'NSI', toCode: 'GVA', transport: 'Avion',
@@ -668,12 +680,21 @@ export async function getShipments() {
   // On leur attribue le tarif de la réservation (par défaut, démo : 12 €/kg).
   let changed = false;
   const next = (list || []).map((s) => {
-    if (!s.pricePerKg) {
+    let out = s;
+    // Migration sécurité : les anciens colis dont le PIN était identique aux
+    // chiffres de la référence (transmis ensemble au voyageur) reçoivent un
+    // nouveau PIN indépendant.
+    const refDigits = String(s.ref || '').replace(/\D/g, '');
+    if (s.pin && refDigits && s.pin === refDigits) {
+      out = { ...out, pin: genPin(out.ref) };
+      changed = true;
+    }
+    if (!out.pricePerKg) {
       changed = true;
       const rate = 12;
-      return { ...s, pricePerKg: rate, total: (Number(s.weight) || 0) * rate };
+      out = { ...out, pricePerKg: rate, total: (Number(out.weight) || 0) * rate };
     }
-    return s;
+    return out;
   });
   if (changed) await localStore.set(KEY_SHIPMENTS, next);
   return next;
@@ -685,7 +706,7 @@ export async function upsertShipment(data) {
   const idx = list.findIndex((s) => s.id === data.id);
   const next = { ...data };
   if (next.status === 'landed' && !next.pin) {
-    next.pin = genPin();
+    next.pin = genPin(next.ref || data.ref);
     next.qrData = genQR(next.ref || data.ref);
     await addNotification({ type: 'landing' });
   }
@@ -704,7 +725,7 @@ export async function setShipmentStatus(id, status, extra = {}) {
   if (found) {
     next = { ...found, ...extra };
     if (status === 'landed' && !next.pin) {
-      next.pin = genPin();
+      next.pin = genPin(next.ref || 'GP-0000');
       next.qrData = genQR(next.ref || 'GP-0000');
     }
     next.status = status;

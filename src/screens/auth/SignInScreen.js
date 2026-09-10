@@ -348,7 +348,7 @@ export default function SignInScreen({ navigation }) {
             <Text style={styles.guestText}>{t('home.guestExplore')}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.footer}>© 2026 TRAVEX GLOBAL. Service Sécurisé de Transit International.</Text>
+          <Text style={styles.footer}>© 2026 TRAVEX GLOBAL. Service sécurisé de transit international.</Text>
         </ScrollView>
       </KeyboardAvoidingView>
 
