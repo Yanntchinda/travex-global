@@ -27,7 +27,9 @@ if (Platform.OS === 'web') {
         right: auto !important;
         bottom: auto !important;
         width: 412px !important;
-        height: min(880px, 94vh) !important;
+        /* Fallbacks universels (pas de min(), non supporté par les vieux navigateurs) */
+        height: 94vh !important;
+        max-height: 880px !important;
         transform: translate(-50%, -50%) !important;
         border-radius: 34px !important;
         overflow: hidden !important;
@@ -37,9 +39,6 @@ if (Platform.OS === 'web') {
           0 0 0 13px #2a3a52,
           0 34px 90px rgba(0, 0, 0, 0.65) !important;
       }
-    }
-    @media (max-width: 479px) {
-      body > div { width: 100%; height: 100%; }
     }
   `;
   document.head.appendChild(style);
