@@ -101,9 +101,6 @@ export default function DynamicIsland({ onPress }) {
     return () => { unsub(); clearTimeout(timer); if (closeTimer.current) clearTimeout(closeTimer.current); };
   }, [present]);
 
-  const width = anim.interpolate({ inputRange: [0, 1], outputRange: [COMPACT.w, EXPANDED.w] });
-  const height = anim.interpolate({ inputRange: [0, 1], outputRange: [COMPACT.h, EXPANDED.h] });
-  const radius = anim.interpolate({ inputRange: [0, 1], outputRange: [COMPACT.r, EXPANDED.r] });
   const tint = TINTS[notif?.type] || TINTS.info;
   const title = notif ? (notif['title_' + lang] || notif.title_fr) : '';
   const body = notif ? (notif['body_' + lang] || notif.body_fr) : '';
@@ -128,35 +125,24 @@ export default function DynamicIsland({ onPress }) {
         style={{ opacity: mounted ? 1 : 0 }}
         pointerEvents={mounted ? 'auto' : 'none'}
       >
-        <Animated.View style={[styles.island, { width, height, borderRadius: radius }]}>
-          {/* Au repos : un simple rond (pastille d'état) */}
-          {!mounted && <View style={styles.compactDotInner} />}
-
-          {/* Contenu étendu */}
-          {mounted && (
-            <Animated.View
-              style={[
-                styles.contentRow,
-                {
-                  opacity: contentAnim,
-                  transform: [
-                    { translateY: contentAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
-                    { scale: contentAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
-                  ],
-                },
-              ]}
-            >
-              <View style={[styles.iconBubble, { backgroundColor: tint.bg }]}>
-                <Ionicons name={notif?.icon || 'notifications'} size={18} color={tint.color} />
-              </View>
-              <View style={styles.textCol}>
-                <Text style={styles.title} numberOfLines={1}>{title}</Text>
-                <Text style={styles.subtitle} numberOfLines={1}>{body}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={14} color="#475569" />
-            </Animated.View>
-          )}
-        </Animated.View>
+        {/* Notification « nue » : aucun fond, aucune pilule — juste le
+            message qui sort, reste ~4,5 s puis se referme tout seul. */}
+        {mounted && (
+          <Animated.View
+            style={[
+              styles.messageWrap,
+              {
+                opacity: contentAnim,
+                transform: [
+                  { translateY: contentAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) },
+                  { scale: contentAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
+                ],
+              },
+            ]}
+          >
+            <Text style={styles.message} numberOfLines={2}>{body || title}</Text>
+          </Animated.View>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -167,27 +153,14 @@ const styles = StyleSheet.create({
     position: 'absolute', top: TOP_OFFSET, left: 0, right: 0,
     alignItems: 'center', zIndex: 9999, elevation: 30,
   },
-  island: {
-    backgroundColor: '#000000',
-    borderWidth: 1,
-    borderColor: 'rgba(30,41,59,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.8,
-    shadowRadius: 30,
-    elevation: 20,
+  // Message seul, sans fond : l'ombre du texte le rend lisible sur tout écran.
+  messageWrap: {
+    maxWidth: 340, paddingHorizontal: 18, alignItems: 'center',
   },
-  // Pastille d'état affichée dans le rond au repos.
-  compactDotInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#0EA5E9' },
-  contentRow: {
-    flexDirection: 'row', alignItems: 'center', width: '100%',
-    paddingHorizontal: 12, gap: 12,
+  message: {
+    color: '#FFFFFF', fontSize: 14, fontWeight: '800', textAlign: 'center', lineHeight: 19,
+    textShadowColor: 'rgba(2,6,23,0.9)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
   },
-  iconBubble: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  textCol: { flex: 1, minWidth: 0 },
-  title: { color: '#F1F5F9', fontSize: 12, fontWeight: '700', letterSpacing: 0.3 },
-  subtitle: { color: '#94A3B8', fontSize: 10, marginTop: 2 },
 });
