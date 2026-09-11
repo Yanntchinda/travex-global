@@ -1,8 +1,6 @@
-import React from 'react';
-import {
-  View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity,
+  ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius } from '../theme/theme';
 
@@ -125,6 +123,28 @@ export function RatingSummary({ value = 0, count = 0, size = 14, showCount = tru
 }
 
 // ---------- Étoiles interactives (on peut taper pour noter) ----------
+// Étoile animée : quand elle s'allume, elle « brille » (rebond d'échelle).
+function StarIcon({ filled, size }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const prevFilled = useRef(false);
+  useEffect(() => {
+    if (filled && !prevFilled.current) {
+      scale.setValue(0.55);
+      Animated.spring(scale, { toValue: 1, friction: 3, tension: 46, useNativeDriver: true }).start();
+    }
+    prevFilled.current = filled;
+  }, [filled, scale]);
+  return (
+    <Animated.View style={{ transform: [{ scale }], marginHorizontal: 4 }}>
+      <Ionicons
+        name={filled ? 'star' : 'star-outline'}
+        size={size}
+        color={filled ? colors.star : colors.border}
+      />
+    </Animated.View>
+  );
+}
+
 export function RatingInput({ value = 0, onChange, size = 34 }) {
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
@@ -135,12 +155,7 @@ export function RatingInput({ value = 0, onChange, size = 34 }) {
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
         >
-          <Ionicons
-            name={i <= value ? 'star' : 'star-outline'}
-            size={size}
-            color={i <= value ? colors.star : colors.border}
-            style={{ marginHorizontal: 4 }}
-          />
+          <StarIcon filled={i <= value} size={size} />
         </TouchableOpacity>
       ))}
     </View>

@@ -68,7 +68,9 @@ export default function TravelerProfileScreen({ route, navigation }) {
         {/* Carte identité */}
         <View style={styles.card}>
           <View style={styles.avatarWrap}>
-            {traveler.avatar ? (
+            {traveler.photo ? (
+              <Image source={traveler.photo} style={styles.avatarImg} />
+            ) : traveler.avatar ? (
               <Image source={{ uri: traveler.avatar }} style={styles.avatarImg} />
             ) : (
               <View style={styles.avatar}><Text style={styles.avatarText}>{traveler.initials || 'V'}</Text></View>

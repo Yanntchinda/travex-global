@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView,
+  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,8 +10,67 @@ import { useLanguage } from '../../context/LanguageContext';
 import { EmptyState } from '../../components/common';
 import { getConversations, sendChatMessage } from '../../services/supabase';
 
+// ---------------------------------------------------------------------------
+// Écran d'appel via Internet (VoIP).
+// NOTE DÉMO : la sonnerie / la durée sont simulées localement. De vrais appels
+// voix nécessitent WebRTC + un serveur de signalisation (Ex : Elixir, Agora,
+// Twilio). Cet écran est prêt à recevoir un vrai flux audio quand le backend
+// existera : brancher getUserMedia/WebRTC dans startCall()/endCall().
+// ---------------------------------------------------------------------------
+function CallModal({ visible, onClose, name, initials }) {
+  const { t } = useLanguage();
+  const [phase, setPhase] = useState('ringing'); // ringing | active
+  const [seconds, setSeconds] = useState(0);
+  const [muted, setMuted] = useState(false);
+  const [speaker, setSpeaker] = useState(true);
+
+  // Sonnerie ~3 s puis « décrochage » (simulation) et chrono d'appel.
+  useEffect(() => {
+    if (!visible) { setPhase('ringing'); setSeconds(0); setMuted(false); setSpeaker(true); return; }
+    const ring = setTimeout(() => setPhase('active'), 3000);
+    return () => clearTimeout(ring);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible || phase !== 'active') return;
+    const chrono = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(chrono);
+  }, [visible, phase]);
+
+  const mmss = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  const status = phase === 'ringing' ? t('msg.ringing') : `${t('msg.inCall')} · ${mmss}`;
+
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+      <View style={styles.callOverlay}>
+        <View style={styles.callAvatar}><Text style={styles.callAvatarText}>{initials || '?'}</Text></View>
+        <Text style={styles.callName}>{name}</Text>
+        <Text style={styles.callStatus}>{status}</Text>
+        <Text style={styles.callVia}>{t('msg.calling')}</Text>
+
+        <View style={styles.callControls}>
+          <TouchableOpacity style={[styles.callBtn, muted && styles.callBtnOn]} activeOpacity={0.8} onPress={() => setMuted((m) => !m)}>
+            <Ionicons name={muted ? 'mic-off' : 'mic'} size={22} color={muted ? colors.white : '#CBD5E1'} />
+            <Text style={[styles.callBtnLabel, muted && { color: colors.white }]}>{t('msg.mute')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.callBtn, speaker && styles.callBtnOn]} activeOpacity={0.8} onPress={() => setSpeaker((s) => !s)}>
+            <Ionicons name="volume-high" size={22} color={speaker ? colors.white : '#CBD5E1'} />
+            <Text style={[styles.callBtnLabel, speaker && { color: colors.white }]}>{t('msg.speaker')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.callEnd} activeOpacity={0.85} onPress={onClose}>
+          <Ionicons name="call" size={26} color={colors.white} style={{ transform: [{ rotate: '135deg' }] }} />
+          <Text style={styles.callEndLabel}>{t('msg.endCall')}</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
 function Conversation({ convo, onBack }) {
   const { t } = useLanguage();
+  const [callOpen, setCallOpen] = useState(false);
   const [messages, setMessages] = useState(convo.messages || []);
   const [draft, setDraft] = useState('');
   const [seen, setSeen] = useState(false); // accusé de lecture : "vu" par l'autre
@@ -53,7 +112,9 @@ function Conversation({ convo, onBack }) {
           <Text style={styles.chatName}>{convo.name}</Text>
           <Text style={styles.chatStatus}><View style={styles.onlineDot} /> {t('msg.online')}</Text>
         </View>
-        <Ionicons name="call-outline" size={20} color={colors.primary} />
+        <TouchableOpacity style={styles.callBtnIcon} activeOpacity={0.7} onPress={() => setCallOpen(true)}>
+          <Ionicons name="call-outline" size={20} color={colors.primary} />
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.chatBody}>
@@ -100,6 +161,8 @@ function Conversation({ convo, onBack }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <CallModal visible={callOpen} onClose={() => setCallOpen(false)} name={convo.name} initials={convo.initials} />
     </SafeAreaView>
   );
 }
@@ -192,6 +255,31 @@ export default function MessagesScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  // ---- Écran d'appel ----
+  callOverlay: {
+    flex: 1, backgroundColor: '#04102B', alignItems: 'center', justifyContent: 'center', padding: spacing.xl,
+  },
+  callAvatar: {
+    width: 110, height: 110, borderRadius: 55, backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg,
+  },
+  callAvatarText: { color: colors.white, fontSize: 38, fontWeight: '900' },
+  callName: { color: colors.white, fontSize: 24, fontWeight: '800' },
+  callStatus: { color: '#8FB3FF', fontSize: 14, fontWeight: '600', marginTop: 6 },
+  callVia: { color: '#64748B', fontSize: 12, marginTop: 4 },
+  callControls: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xxl * 2 },
+  callBtn: {
+    width: 74, height: 74, borderRadius: 37, backgroundColor: 'rgba(255,255,255,0.10)',
+    alignItems: 'center', justifyContent: 'center', gap: 4,
+  },
+  callBtnOn: { backgroundColor: colors.primary },
+  callBtnLabel: { color: '#CBD5E1', fontSize: 10, fontWeight: '700' },
+  callEnd: {
+    marginTop: spacing.xxl, width: 74, height: 74, borderRadius: 37, backgroundColor: '#E02424',
+    alignItems: 'center', justifyContent: 'center', gap: 2,
+  },
+  callEndLabel: { color: colors.white, fontSize: 10, fontWeight: '700' },
+  callBtnIcon: { padding: 6 },
   safe: { flex: 1, backgroundColor: colors.bg },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: '5%', paddingVertical: spacing.md },
   title: { fontSize: 22, fontWeight: '800', color: colors.primaryDark, paddingHorizontal: '5%', paddingVertical: spacing.md },

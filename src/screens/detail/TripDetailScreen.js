@@ -163,7 +163,9 @@ export default function TripDetailScreen({ route, navigation }) {
         <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={openTravelerProfile}>
           <View style={styles.travelerRow}>
             <View style={styles.avatar}>
-              {traveler.avatar ? (
+              {traveler.photo ? (
+                <Image source={traveler.photo} style={styles.avatarImg} />
+              ) : traveler.avatar ? (
                 <Image source={{ uri: traveler.avatar }} style={styles.avatarImg} />
               ) : (
                 <Text style={styles.avatarText}>{traveler.initials}</Text>

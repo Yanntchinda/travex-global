@@ -166,7 +166,10 @@ export async function getRatings(targetId) {
   const ratings = await localStore.get(KEY_RATINGS, {});
   const list = ratings[targetId] || [];
   const count = list.length;
-  const average = count ? list.reduce((s, r) => s + Number(r.score), 0) / count : 0;
+  // Les avis seedés sont des nombres, les nouveaux sont des objets {score, at}.
+  const average = count
+    ? list.reduce((s, r) => s + (typeof r === 'number' ? r : Number(r.score) || 0), 0) / count
+    : 0;
   return { average: Math.round(average * 10) / 10, count, ratings: list };
 }
 

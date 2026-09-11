@@ -9,7 +9,7 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { Stars } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { updateUser, getRatings } from '../../services/supabase';
+import {updateUser, getRatings, fetchUserAnnouncements } from '../../services/supabase';
 import { APP } from '../../config';
 
 export default function ProfileScreen({ navigation }) {
@@ -17,7 +17,9 @@ export default function ProfileScreen({ navigation }) {
   const { t } = useLanguage();
   const [showLogout, setShowLogout] = useState(false);
   const [liveRating, setLiveRating] = useState({ average: 0, count: 0 });
-  const stats = user?.stats || { voyages: 0, demandes: 0, note: 0 };
+  // Compteurs réels : nombre d'annonces (départs / demandes) du compte connecté.
+  const [liveCounts, setLiveCounts] = useState({ voyages: 0, demandes: 0 });
+  const stats = { voyages: liveCounts.voyages, demandes: liveCounts.demandes, note: liveRating.count ? liveRating.average : (user?.stats?.note || 0) };
 
   // Le score affiché sur le profil réagit en temps réel aux nouveaux avis reçus.
   const loadRating = useCallback(async () => {
@@ -35,6 +37,22 @@ export default function ProfileScreen({ navigation }) {
   }, [navigation, loadRating]);
 
   const displayNote = liveRating.count ? liveRating.average : stats.note;
+
+  const loadCounts = useCallback(async () => {
+    try {
+      if (!user?.email) { setLiveCounts({ voyages: 0, demandes: 0 }); return; }
+      const list = await fetchUserAnnouncements(user.email);
+      setLiveCounts({
+        voyages: list.filter((a) => !a.isDemande).length,
+        demandes: list.filter((a) => a.isDemande).length,
+      });
+    } catch (e) { /* démo : silencieux */ }
+  }, [user?.email]);
+  useEffect(() => { loadCounts(); }, [loadCounts]);
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', loadCounts);
+    return unsub;
+  }, [navigation, loadCounts]);
 
   const MENU = [
     { icon: 'person-outline', label: t('profile.personal'), screen: 'PersonalInfo' },

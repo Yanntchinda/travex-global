@@ -134,7 +134,9 @@ export function Traveler({ traveler }) {
   return (
     <View style={styles.travelerRow}>
       <View style={styles.avatar}>
-        {traveler.avatar ? (
+        {traveler.photo ? (
+          <Image source={traveler.photo} style={styles.avatarImg} />
+        ) : traveler.avatar ? (
           <Image source={{ uri: traveler.avatar }} style={styles.avatarImg} />
         ) : (
           <Text style={styles.avatarText}>{traveler.initials}</Text>
