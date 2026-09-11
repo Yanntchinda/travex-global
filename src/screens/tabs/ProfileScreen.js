@@ -9,12 +9,14 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { Stars } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 import {updateUser, getRatings, fetchUserAnnouncements } from '../../services/supabase';
 import { APP } from '../../config';
 
 export default function ProfileScreen({ navigation }) {
   const { user, signOut, setUser } = useAuth();
   const { t } = useLanguage();
+  const { mode, setMode } = useTheme();
   const [showLogout, setShowLogout] = useState(false);
   const [liveRating, setLiveRating] = useState({ average: 0, count: 0 });
   // Compteurs réels : nombre d'annonces (départs / demandes) du compte connecté.
@@ -166,6 +168,32 @@ export default function ProfileScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      {/* Apparence : mode clair / sombre */}
+      <View style={styles.themeCard}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Ionicons name={mode === 'dark' ? 'moon' : 'sunny'} size={18} color={colors.primary} />
+          <Text style={styles.themeTitle}>{t('profile.appearance')}</Text>
+        </View>
+        <View style={styles.themeChips}>
+          <TouchableOpacity
+            style={[styles.themeChip, mode === 'light' && styles.themeChipActive]}
+            activeOpacity={0.8}
+            onPress={() => setMode('light')}
+          >
+            <Ionicons name="sunny-outline" size={15} color={mode === 'light' ? colors.white : colors.muted} />
+            <Text style={[styles.themeChipText, mode === 'light' && styles.themeChipTextActive]}>{t('theme.light')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.themeChip, mode === 'dark' && styles.themeChipActive]}
+            activeOpacity={0.8}
+            onPress={() => setMode('dark')}
+          >
+            <Ionicons name="moon-outline" size={15} color={mode === 'dark' ? colors.white : colors.muted} />
+            <Text style={[styles.themeChipText, mode === 'dark' && styles.themeChipTextActive]}>{t('theme.dark')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Menu */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.menu}>
         {MENU.map((m, i) => (
@@ -235,6 +263,20 @@ const styles = StyleSheet.create({
   email: { color: 'rgba(255,255,255,0.8)', fontSize: 14, textAlign: 'center', marginTop: 2 },
   meta: { color: 'rgba(255,255,255,0.75)', fontSize: 13, textAlign: 'center', marginTop: 2 },
   stats: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.lg },
+  themeCard: {
+    backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg,
+    marginHorizontal: '5%', marginTop: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
+  },
+  themeTitle: { fontSize: 14, fontWeight: '800', color: colors.text },
+  themeChips: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  themeChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, height: 42,
+    borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.inputBg, justifyContent: 'center',
+  },
+  themeChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  themeChipText: { fontSize: 13, fontWeight: '700', color: colors.muted },
+  themeChipTextActive: { color: colors.white },
   stat: { alignItems: 'center', width: 90 },
   statNum: { color: colors.white, fontWeight: '800', fontSize: 20 },
   statLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 2 },

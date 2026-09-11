@@ -20,6 +20,7 @@ const initialMetrics = {
 };
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { colors } from './src/theme/theme';
 import FloatingTabBar from './src/components/FloatingTabBar';
@@ -153,16 +154,29 @@ export default function App() {
     <SafeAreaProvider initialMetrics={initialMetrics}>
       <LanguageProvider>
         <AuthProvider>
-          <NavigationContainer>
+          <ThemeProvider>
+            <AppBody />
+          </ThemeProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </SafeAreaProvider>
+  );
+}
+
+// Corps de l'app : la clé change avec le thème pour tout re-monter quand
+// l'utilisateur bascule clair <-> sombre (les styles mutés sont alors relus).
+function AppBody() {
+  const { remountKey } = useTheme();
+  return (
+    <>
+      <NavigationContainer key={'theme-' + remountKey}>
             <View style={{ flex: 1 }}>
               <RootNavigator />
               {/* Capsule de notification « Dynamic Island » (temps réel, par-dessus l'app) */}
               <NotificationIsland />
-              <OtaUpdater />
             </View>
-          </NavigationContainer>
-        </AuthProvider>
-      </LanguageProvider>
-    </SafeAreaProvider>
+      </NavigationContainer>
+      <OtaUpdater />
+    </>
   );
 }

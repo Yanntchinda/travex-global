@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   container: { position: 'relative', height: 92, justifyContent: 'flex-end' },
   bar: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
-    height: 68, backgroundColor: '#FFFFFF', borderRadius: 22,
+    height: 68, backgroundColor: colors.card, borderRadius: 22,
     shadowColor: '#0B2545', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.14,
     shadowRadius: 18, elevation: 10,
   },

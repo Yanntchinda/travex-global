@@ -136,6 +136,10 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Photo de fond (voyageur face à un avion, nuit) + voile sombre :
+          même ambiance que la page de connexion, cartes claires par-dessus. */}
+      <Image source={require('../../../assets/hero/login-bg.jpg')} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(3,10,26,0.90)' }]} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Héro premium — slider d'images sombres avec texte superposé */}
         <View style={styles.hero}>

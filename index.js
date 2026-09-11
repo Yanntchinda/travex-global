@@ -1,3 +1,5 @@
+// DOIT rester le premier import : wrap StyleSheet.create pour le mode sombre.
+import './src/theme/sheetPatch';
 import { Platform } from 'react-native';
 import { registerRootComponent } from 'expo';
 

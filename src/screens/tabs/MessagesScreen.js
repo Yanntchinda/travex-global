@@ -18,18 +18,29 @@ import { isOnline, subscribePresence } from '../../services/presence';
 // Twilio). Cet écran est prêt à recevoir un vrai flux audio quand le backend
 // existera : brancher getUserMedia/WebRTC dans startCall()/endCall().
 // ---------------------------------------------------------------------------
-function CallModal({ visible, onClose, name, initials }) {
+function CallModal({ visible, onClose, name, initials, calleeId, onMissed }) {
   const { t } = useLanguage();
   const [phase, setPhase] = useState('ringing'); // ringing | active
   const [seconds, setSeconds] = useState(0);
   const [muted, setMuted] = useState(false);
   const [speaker, setSpeaker] = useState(true);
+  const phaseRef = useRef('ringing');
+  phaseRef.current = phase;
 
-  // Sonnerie ~3 s puis « décrochage » (simulation) et chrono d'appel.
+  // Sonnerie : le correspondant décroche après 4-8 s S'IL est en ligne ;
+  // après 30 s sans réponse → appel manqué (message dans la conversation).
   useEffect(() => {
     if (!visible) { setPhase('ringing'); setSeconds(0); setMuted(false); setSpeaker(true); return; }
-    const ring = setTimeout(() => setPhase('active'), 3000);
-    return () => clearTimeout(ring);
+    const online = isOnline(calleeId);
+    let answer;
+    if (online) answer = setTimeout(() => setPhase('active'), 4000 + Math.floor(Math.random() * 4000));
+    const noAnswer = setTimeout(() => {
+      if (phaseRef.current === 'ringing') {
+        if (onMissed) onMissed();
+        onClose();
+      }
+    }, 30000);
+    return () => { if (answer) clearTimeout(answer); clearTimeout(noAnswer); };
   }, [visible]);
 
   useEffect(() => {
@@ -74,6 +85,14 @@ function Conversation({ convo, onBack }) {
   const [callOpen, setCallOpen] = useState(false);
   // Présence temps réel : « En ligne » / « Hors ligne » sous le nom.
   const [online, setOnline] = useState(isOnline(convo.id));
+
+  // Appel manqué (30 s sans réponse) : message système en bas de la conversation.
+  const onMissedCall = useCallback(async () => {
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setMessages((ms) => [...ms, { id: 'm_' + Date.now(), from: 'system', kind: 'missed', text: t('msg.missedCall'), time }]);
+    try { await sendChatMessage({ convoId: convo.id, from: 'system', kind: 'missed', text: t('msg.missedCall'), name: convo.name }); } catch (e) {}
+  }, [convo.id, convo.name, t]);
   useEffect(() => {
     setOnline(isOnline(convo.id));
     return subscribePresence(({ id, online: on }) => { if (id === convo.id) setOnline(on); });
@@ -136,6 +155,16 @@ function Conversation({ convo, onBack }) {
           keyboardShouldPersistTaps="handled"
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
           renderItem={({ item }) => {
+            // Message système (ex : appel manqué) — petite ligne centrée.
+            if (item.from === 'system') {
+              return (
+                <View style={styles.callEvent}>
+                  <Ionicons name="call" size={12} color="#F87171" style={{ transform: [{ rotate: '135deg' }] }} />
+                  <Text style={styles.callEventText}>{item.text}</Text>
+                  <Text style={styles.callEventTime}>{item.time}</Text>
+                </View>
+              );
+            }
             const mine = item.from === 'me';
             return (
               <View style={[styles.bubble, mine ? styles.bubbleMe : styles.bubbleThem]}>
@@ -171,7 +200,14 @@ function Conversation({ convo, onBack }) {
         </View>
       </KeyboardAvoidingView>
 
-      <CallModal visible={callOpen} onClose={() => setCallOpen(false)} name={convo.name} initials={convo.initials} />
+      <CallModal
+        visible={callOpen}
+        onClose={() => setCallOpen(false)}
+        name={convo.name}
+        initials={convo.initials}
+        calleeId={convo.id}
+        onMissed={onMissedCall}
+      />
     </SafeAreaView>
   );
 }
@@ -330,6 +366,13 @@ const styles = StyleSheet.create({
   // Le corps du chat se termine AU-DESSUS de la barre d'onglets flottante :
   // la zone de saisie reste ainsi toujours visible et accessible.
   chatBody: { flex: 1, paddingBottom: 104 },
+  callEvent: {
+    alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(248,113,113,0.12)', borderRadius: 14,
+    paddingHorizontal: 12, paddingVertical: 6, marginBottom: spacing.sm,
+  },
+  callEventText: { fontSize: 12, fontWeight: '700', color: '#F87171' },
+  callEventTime: { fontSize: 11, color: colors.muted },
   bubble: { maxWidth: '78%', borderRadius: 18, padding: spacing.md, marginBottom: spacing.sm },
   bubbleMe: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   bubbleThem: { alignSelf: 'flex-start', backgroundColor: colors.white, borderBottomLeftRadius: 4, ...shadow.card },
