@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { colors, spacing } from '../theme/theme';
 import { useLanguage } from '../context/LanguageContext';
@@ -110,16 +109,11 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
           ]}
           pointerEvents="none"
         >
-          <LinearGradient
-            colors={[colors.primary, '#0E8F83']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.indicatorFill}
-          >
+          <View style={styles.indicatorFill}>
             <Animated.View style={{ opacity: fade }}>
               <Ionicons name={ICONS[routes[activeIdx]?.name] || 'ellipse'} size={26} color="#fff" />
             </Animated.View>
-          </LinearGradient>
+          </View>
         </Animated.View>
 
         {/* Fond de la barre */}
@@ -174,13 +168,13 @@ const styles = StyleSheet.create({
   label: { fontSize: 11, marginTop: 4 },
   indicator: {
     position: 'absolute', top: 0, left: 0, zIndex: 20,
-    shadowColor: '#0E8F83', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4,
+    shadowColor: '#0043E0', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35,
     shadowRadius: 14, elevation: 12,
   },
   indicatorFill: {
     width: '100%', height: '100%', borderRadius: 999,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 4, borderColor: colors.bg,
+    backgroundColor: colors.primary,
   },
   cutout: { position: 'absolute', top: -9, left: 0, zIndex: 5, height: 28 },
 });

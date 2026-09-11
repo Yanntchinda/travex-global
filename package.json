@@ -15,6 +15,7 @@
     "expo-image-picker": "~57.0.16",
     "expo-linear-gradient": "~57.0.1",
     "expo-status-bar": "~57.0.1",
+    "expo-updates": "57.0.22",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -37,7 +38,9 @@
     "prebuild:android": "expo prebuild --platform android",
     "apk:local": "expo prebuild --platform android && cd android && ./gradlew assembleRelease",
     "build:ios-sim": "eas build -p ios --profile preview-ios",
-    "prebuild:ios": "expo prebuild --platform ios"
+    "prebuild:ios": "expo prebuild --platform ios",
+    "ota:publish": "eas update --branch production",
+    "ota:preview": "eas update --branch preview"
   },
   "private": true
 }

@@ -28,7 +28,11 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["INTERNET", "CAMERA", "READ_MEDIA_IMAGES"]
+      "permissions": [
+        "INTERNET",
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -47,6 +51,14 @@
       "eas": {
         "projectId": "773d6b4f-1108-4f46-aa07-34169d7ab8a0"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/773d6b4f-1108-4f46-aa07-34169d7ab8a0",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

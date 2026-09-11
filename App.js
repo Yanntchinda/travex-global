@@ -1,9 +1,9 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { ActivityIndicator, View, Dimensions } from 'react-native';
+import { ActivityIndicator, View, Dimensions, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Sur le web, `initialWindowMetrics` est null, donc le provider démarre avec
@@ -117,6 +117,37 @@ function RootNavigator() {
   );
 }
 
+// Mise à jour OTA (EAS Update) : au démarrage sur mobile, l'app vérifie si une
+// nouvelle version JS est disponible et la recharge automatiquement.
+// (Désactivé sur web : l'aperçu web est reconstruit à chaque déploiement.)
+function OtaUpdater() {
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    (async () => {
+      try {
+        const Updates = require('expo-updates');
+        if (!Updates.isEnabled?.() && !Updates.checkForUpdateAsync) return;
+        const res = await Updates.checkForUpdateAsync();
+        if (res && res.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        // Pas de mise à jour disponible ou pas de réseau : silencieux.
+      }
+    })();
+  }, []);
+  return null;
+}
+
+// Capsule de notification réservée aux utilisateurs connectés :
+// rien ne s'affiche sur l'écran de connexion / inscription.
+function NotificationIsland() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <DynamicIsland />;
+}
+
 export default function App() {
   return (
     <SafeAreaProvider initialMetrics={initialMetrics}>
@@ -126,7 +157,8 @@ export default function App() {
             <View style={{ flex: 1 }}>
               <RootNavigator />
               {/* Capsule de notification « Dynamic Island » (temps réel, par-dessus l'app) */}
-              <DynamicIsland />
+              <NotificationIsland />
+              <OtaUpdater />
             </View>
           </NavigationContainer>
         </AuthProvider>

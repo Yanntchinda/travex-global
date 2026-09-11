@@ -23,6 +23,7 @@ const KEY_PROPOSALS = 'travex.proposals'; // propositions de voyageurs sur une d
 const KEY_SHIPMENTS = 'travex.shipments'; // colis à suivre (expéditeur / voyageur)
 const KEY_CONVERSATIONS = 'travex.conversations'; // conversations de messagerie
 const KEY_REPORTS = 'travex.reports'; // signalements d'utilisateurs (preuves + raison)
+const KEY_FAVORITES = 'travex.favoris'; // voyages mis en favori (affichés en premier à l'accueil)
 
 // ============ COMPTES PRÉCONFIGURÉS (admin + compte vérifié) ============
 // Accès de test fournis à l'utilisateur.
@@ -196,6 +197,20 @@ export async function getReservations() {
 async function activeBookedKg(id) {
   const res = await localStore.get(KEY_RESERVATIONS, []);
   return res.filter((r) => r.tripId === id && r.status === 'active').reduce((s, r) => s + Number(r.kg), 0);
+}
+
+// ---------- Favoris ----------
+// Liste des identifiants de voyages favoris (localement, mode démo).
+export async function getFavoriteIds() {
+  return (await localStore.get(KEY_FAVORITES, [])) || [];
+}
+
+// Ajoute/retire un voyage des favoris. Retourne la nouvelle liste d'identifiants.
+export async function toggleFavorite(id) {
+  const list = (await localStore.get(KEY_FAVORITES, [])) || [];
+  const next = list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+  await localStore.set(KEY_FAVORITES, next);
+  return next;
 }
 
 export async function fetchTrips() {

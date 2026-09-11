@@ -9,7 +9,7 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { TripCard } from '../../components/trip';
 import { DemandCard } from '../../components/demand';
 import { Loading, EmptyState } from '../../components/common';
-import { fetchTrips, getNotifications } from '../../services/supabase';
+import { fetchTrips, getNotifications, getFavoriteIds, toggleFavorite } from '../../services/supabase';
 import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -66,6 +66,7 @@ export default function HomeScreen({ navigation }) {
   const [showPublish, setShowPublish] = useState(false);
   const [slide, setSlide] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
+  const [favIds, setFavIds] = useState([]);
   const slideTimer = useRef(null);
 
   // Auto-défilement du slider d'images toutes les 4 s.
@@ -90,6 +91,13 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Favoris : chargés une fois, réaffichés en tête de liste à chaque ouverture.
+  useEffect(() => { getFavoriteIds().then((ids) => setFavIds(ids || [])); }, []);
+  const onToggleFavorite = useCallback(async (id) => {
+    const next = await toggleFavorite(id);
+    setFavIds(next || []);
+  }, []);
+
   // Compteur de notifications non lues (badge sur la cloche).
   const loadNotifs = useCallback(async () => {
     try {
@@ -106,6 +114,8 @@ export default function HomeScreen({ navigation }) {
 
   const onRefresh = () => { setRefreshing(true); load(); };
 
+  // Les voyages favoris remontent en première position de l'accueil.
+  const byFavorite = (a, b) => (favIds.includes(b.id) ? 1 : 0) - (favIds.includes(a.id) ? 1 : 0);
   const listData = tab === 'voyages'
     ? trips.filter((t) =>
         !t.isDemande &&
@@ -210,13 +220,15 @@ export default function HomeScreen({ navigation }) {
             subtitle={t('home.noResult')}
           />
         ) : (
-          listData.map((item) =>
+          (tab === 'voyages' ? [...listData].sort(byFavorite) : listData).map((item) =>
             tab === 'voyages' ? (
               <TripCard
                 key={item.id}
                 trip={item}
                 onPress={() => navigation.navigate('TripDetail', { id: item.id })}
                 onShare={() => shareListing(item, t)}
+                favorite={favIds.includes(item.id)}
+                onToggleFavorite={onToggleFavorite}
               />
             ) : (
               <DemandCard

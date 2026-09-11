@@ -161,7 +161,7 @@ export function Traveler({ traveler }) {
 }
 
 // Carte complète d'un voyage (accueil) — cartes "journey" style modèle
-export function TripCard({ trip, onPress, onShare }) {
+export function TripCard({ trip, onPress, onShare, favorite, onToggleFavorite }) {
   const { t } = useLanguage();
   const remaining = Math.max(0, (trip.capacityKg || 0) - (trip.bookedKg || 0));
   const m = modeInfo(trip.transport);
@@ -174,9 +174,20 @@ export function TripCard({ trip, onPress, onShare }) {
             {trip.status === 'attente' ? t('publish.pending') : trip.status === 'confirme' ? t('publish.verified') : trip.isDemande ? 'Demande' : trip.badge || 'Nouveau'}
           </Text>
         </View>
-        <View style={styles.modePill}>
-          <Ionicons name={m.icon} size={13} color={m.color} />
-          <Text style={styles.modePillText}>{trip.transport}</Text>
+        <View style={styles.topRight}>
+          <View style={styles.modePill}>
+            <Ionicons name={m.icon} size={13} color={m.color} />
+            <Text style={styles.modePillText}>{trip.transport}</Text>
+          </View>
+          {onToggleFavorite ? (
+            <TouchableOpacity
+              style={styles.favBtn}
+              activeOpacity={0.7}
+              onPress={(e) => { if (e && e.stopPropagation) e.stopPropagation(); onToggleFavorite(trip.id); }}
+            >
+              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={17} color={favorite ? '#E0245E' : colors.muted} />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 
@@ -212,6 +223,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg, marginHorizontal: '2.5%', borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
   topBadges: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+  topRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  favBtn: {
+    width: 30, height: 30, borderRadius: 15, backgroundColor: colors.inputBg,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border,
+  },
   badgePill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
   badgePillText: { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase' },
   modePill: {

@@ -6,7 +6,7 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { ScreenHeader } from '../../components/common';
 
 const CHANNELS = [
-  { icon: 'call-outline', title: 'Support téléphonique', value: '+237 690 00 00 00' },
+  { icon: 'call-outline', title: 'Support téléphonique', value: '+237 658 65 69 49' },
   { icon: 'mail-outline', title: 'Support par e-mail', value: 'support@travexglobal.com' },
   { icon: 'logo-whatsapp', title: 'WhatsApp', value: 'Messagerie instantanée', green: true },
   { icon: 'logo-whatsapp', title: 'Rejoindre le groupe WhatsApp', value: 'Restez à jour avec notre communauté', green: true },

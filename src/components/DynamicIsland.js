@@ -19,7 +19,7 @@ const EXPANDED_W = Math.min(340, SCREEN_W - 40);
 const EXPANDED = { w: EXPANDED_W, h: 68, r: 32 };
 // Décalage vertical de la capsule : elle apparaît quelques centimètres sous le
 // haut de l'écran (sous les en-têtes), sans recouvrir le titre des écrans.
-const TOP_OFFSET = 110;
+const TOP_OFFSET = 78;
 
 // Couleur de la pastille d'icône selon le type de notification.
 const TINTS = {
