@@ -6,8 +6,18 @@
 //   navigation et appliquer le nouveau thème partout, immédiatement.
 // ---------------------------------------------------------------------------
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { applyTheme } from '../theme/theme';
 import { localStore } from '../services/supabase';
+
+// Sur web, le cadre « téléphone » (#root) a un fond blanc défini dans
+// index.js : on le synchronise avec le thème pour éviter tout bord blanc
+// en mode sombre (bords, rebonds de défilement, transitions).
+function syncRootBackground(mode) {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+  const root = document.getElementById('root');
+  if (root) root.style.setProperty('background', mode === 'dark' ? '#0B1220' : '#FFFFFF', 'important');
+}
 
 const KEY_THEME = 'travex.theme';
 const ThemeContext = createContext({ mode: 'light', setMode: () => {}, remountKey: 0 });
@@ -22,8 +32,10 @@ export function ThemeProvider({ children }) {
     (async () => {
       const saved = await localStore.get(KEY_THEME, 'light');
       if (!alive) return;
-      applyTheme(saved === 'dark' ? 'dark' : 'light');
-      setModeState(saved === 'dark' ? 'dark' : 'light');
+      const m = saved === 'dark' ? 'dark' : 'light';
+      applyTheme(m);
+      syncRootBackground(m);
+      setModeState(m);
     })();
     return () => { alive = false; };
   }, []);
@@ -32,8 +44,8 @@ export function ThemeProvider({ children }) {
     const m = next === 'dark' ? 'dark' : 'light';
     localStore.set(KEY_THEME, m);
     applyTheme(m);
-    setModeState(m);
-    setRemountKey((k) => k + 1); // force le re-rendu complet
+    syncRootBackground(m);
+    setModeState(m); // nouvelle valeur de contexte → tout l'arbre se re-rend
   };
 
   // Tant que le réglage n'est pas chargé, on ne rend rien (évite un flash

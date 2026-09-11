@@ -13,6 +13,24 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# ---------------------------------------------------------------------------
+# Patch web react-navigation : sur web, l'écran d'onglet actif reçoit
+# pointerEvents 'box-none' — valeur INVALIDE en CSS. Le navigateur refuse
+# la mise à jour et laisse l'ancien 'none' (écran inactif) : au retour sur
+# un onglet déjà visité, l'écran reste définitivement non cliquable (les
+# clics passent au travers vers l'écran précédent). On remplace par 'auto'
+# (valide). Uniquement pour le build web : en natif, 'box-none' est géré
+# correctement et EAS réinstalle node_modules sans ce patch.
+# ---------------------------------------------------------------------------
+NAVFILE="node_modules/@react-navigation/bottom-tabs/lib/module/views/BottomTabView.js"
+NAVFILE_CJS="node_modules/@react-navigation/bottom-tabs/lib/commonjs/views/BottomTabView.js"
+for f in "$NAVFILE" "$NAVFILE_CJS"; do
+  if [ -f "$f" ]; then
+    sed -i "s/pointerEvents: isFocused ? 'box-none' : 'none'/pointerEvents: isFocused ? 'auto' : 'none'/" "$f" || true
+  fi
+done
+echo "==> Patch react-navigation (pointer-events onglets web) appliqué."
+
 echo "==> Export Expo (web)..."
 npx expo export --platform web
 

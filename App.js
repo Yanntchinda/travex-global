@@ -68,6 +68,15 @@ function MainTabs() {
     <Tab.Navigator
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{ headerShown: false }}
+      // freezeOnBlur: un écran gelé (react-native-screens) ne re-rend pas quand
+      // son statut actif/inactif change : ses pointer-events restent périmés et
+      // l'écran précédent CAPTE les clics après un retour d'onglet (web + app).
+      freezeOnBlur={false}
+      lazy={false}
+      // Sur web, react-native-screens détache les écrans inactifs (activityState)
+      // et ne resta pas toujours leurs pointer-events au retour d'onglet :
+      // l'écran restait figé sous celui d'avant. On désactive ce détachement.
+      detachInactiveScreens={false}
     >
       <Tab.Screen name="Accueil" component={HomeScreen} />
       <Tab.Screen name="Réservations" component={ReservationsScreen} />
@@ -163,13 +172,15 @@ export default function App() {
   );
 }
 
-// Corps de l'app : la clé change avec le thème pour tout re-monter quand
-// l'utilisateur bascule clair <-> sombre (les styles mutés sont alors relus).
+// Corps de l'app : quand le thème change, le contexte change de valeur →
+// tout l'arbre se re-rend SANS être démonté : chaque écran relit ses styles
+// (mutés par applyTheme/swapSheets), la navigation et les modales ouvertes
+// sont conservées, pas de flash blanc ni de retour forcé à l'accueil.
 function AppBody() {
-  const { remountKey } = useTheme();
+  useTheme();
   return (
     <>
-      <NavigationContainer key={'theme-' + remountKey}>
+      <NavigationContainer>
             <View style={{ flex: 1 }}>
               <RootNavigator />
               {/* Capsule de notification « Dynamic Island » (temps réel, par-dessus l'app) */}
