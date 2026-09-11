@@ -2,9 +2,9 @@
 // On garde un bleu marine (couleur du logo TRAVEX) mais on ajoute des accents
 // teal/orange et on retravaille les tons pour une identité bien distincte.
 export const colors = {
-  primary: '#1B4F8A',      // bleu marine (logo TRAVEX)
-  primaryDark: '#123A69',  // bleu foncé (en-têtes)
-  primaryLight: '#E7EEF7', // bleu très clair (fonds, hover)
+  primary: '#0043E0',      // bleu signature TRAVEX (#0043E0)
+  primaryDark: '#0035B8',  // bleu foncé (en-têtes)
+  primaryLight: '#E8EDFB', // bleu très clair (fonds, hover)
   accent: '#0E8F83',       // TEAL — accent signature TRAVEX
   accentLight: '#E2F3F1',  // teal très clair
   orange: '#E8833A',       // accent orangé (badges)
@@ -38,7 +38,7 @@ export const shadow = {
 
 // Icônes + libellés des modes de transport
 export const TRANSPORT_MODES = [
-  { key: 'Avion', icon: 'airplane', color: '#1B4F8A' },
+  { key: 'Avion', icon: 'airplane', color: '#0043E0' },
   { key: 'Cargo', icon: 'boat', color: '#0E8F83' },
   { key: 'Terrestre', icon: 'bus', color: '#E8833A' },
 ];

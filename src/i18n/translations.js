@@ -294,7 +294,7 @@ export const translations = {
     'booking.cancelledNote': 'Cette réservation a été annulée.',
     // Espace Réservations & Suivi
     'track.myBookings': 'Mes réservations',
-    'track.travelerSpace': 'Mes kilos réservés',
+    'track.travelerSpace': 'KiloPass',
     'track.all': 'Tous les colis',
     'track.pending': 'En attente',
     'track.inTransit': 'En cours / Atterri',
@@ -731,7 +731,7 @@ export const translations = {
     'booking.cancelledNote': 'This booking has been cancelled.',
     // Bookings & Tracking space
     'track.myBookings': 'My reservations',
-    'track.travelerSpace': 'My reserved kg',
+    'track.travelerSpace': 'KiloPass',
     'track.all': 'All parcels',
     'track.pending': 'Pending',
     'track.inTransit': 'In transit / Landed',

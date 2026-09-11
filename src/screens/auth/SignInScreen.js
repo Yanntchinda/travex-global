@@ -16,11 +16,11 @@ const OCEAN = {
   bg: '#020617',
   ocean800: '#0c4a6e',
   ocean950: '#020617',
-  brand500: '#0284c7',
-  brand600: '#0369a1',
-  brand700: '#075985',
-  sky400: '#38bdf8',
-  sky200: '#bae6fd',
+  brand500: '#0043E0',
+  brand600: '#0038BE',
+  brand700: '#002B95',
+  sky400: '#5C86FF',
+  sky200: '#C7D6FE',
 };
 
 // ---------- Champ avec icône + œil ----------
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: OCEAN.bg },
   content: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 24 },
   orb: { position: 'absolute', borderRadius: 200, opacity: 0.35 },
-  orb1: { top: 60, left: -80, width: 380, height: 380, backgroundColor: '#0284c7' },
+  orb1: { top: 60, left: -80, width: 380, height: 380, backgroundColor: '#0043E0' },
   orb2: { bottom: 40, right: -100, width: 420, height: 420, backgroundColor: '#0c4a6e' },
   topBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingVertical: 12 },
   langPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 },

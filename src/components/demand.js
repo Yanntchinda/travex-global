@@ -137,7 +137,7 @@ export function DemandCard({ demand, onPress, onPropose }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card, borderRadius: 24, padding: spacing.lg,
-    marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadow.card,
+    marginBottom: spacing.lg, marginHorizontal: '2.5%', borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
   topBadges: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   urgencyPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },

@@ -24,7 +24,7 @@
       "package": "com.travexglobal.app",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#1D5A9E",
+        "backgroundColor": "#0043E0",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },

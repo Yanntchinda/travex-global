@@ -35,7 +35,9 @@
     "build:apk": "eas build -p android --profile preview",
     "build:aab": "eas build -p android --profile production",
     "prebuild:android": "expo prebuild --platform android",
-    "apk:local": "expo prebuild --platform android && cd android && ./gradlew assembleRelease"
+    "apk:local": "expo prebuild --platform android && cd android && ./gradlew assembleRelease",
+    "build:ios-sim": "eas build -p ios --profile preview-ios",
+    "prebuild:ios": "expo prebuild --platform ios"
   },
   "private": true
 }

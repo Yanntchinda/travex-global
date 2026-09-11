@@ -175,7 +175,7 @@ function QrModal({ visible, onClose, shipment }) {
           <Text style={c.scanTitle}>{t('track.qrModalTitle')}</Text>
           <Text style={c.scanSub}>{t('track.qrModalDesc')}</Text>
           <View style={c.qrBox}>
-            <QRCode value={shipment.qrData || 'GP-SAFE-0000'} size={150} color="#123A69" backgroundColor="#F8FAFC" />
+            <QRCode value={shipment.qrData || 'GP-SAFE-0000'} size={150} color="#0035B8" backgroundColor="#F8FAFC" />
             <Text style={c.qrLabel}>{t('track.qrParcelRef')}</Text>
             <Text style={c.qrRef}>{shipment.ref}</Text>
           </View>
