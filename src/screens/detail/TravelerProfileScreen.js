@@ -8,6 +8,7 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { ScreenHeader, Stars, Button, Loading } from '../../components/common';
 import { getRatings, ensureConversation } from '../../services/supabase';
 import { useLanguage } from '../../context/LanguageContext';
+import { isOnline, subscribePresence } from '../../services/presence';
 
 // ---------------------------------------------------------------------------
 // Profil public d'un voyageur : identité, note moyenne, statistiques et
@@ -19,6 +20,12 @@ export default function TravelerProfileScreen({ route, navigation }) {
   const { traveler, travelerId } = route.params || {};
   const [ratings, setRatings] = useState(null);
   const [busy, setBusy] = useState(false);
+  // Présence temps réel du voyageur (simulation en mode démo).
+  const [online, setOnline] = useState(isOnline(travelerId));
+  useEffect(() => {
+    setOnline(isOnline(travelerId));
+    return subscribePresence(({ id, online: on }) => { if (id === travelerId) setOnline(on); });
+  }, [travelerId]);
 
   useEffect(() => {
     getRatings(travelerId || traveler?.name).then(setRatings).catch(() => setRatings({ average: 0, count: 0, ratings: [] }));
@@ -82,6 +89,12 @@ export default function TravelerProfileScreen({ route, navigation }) {
             )}
           </View>
           <Text style={styles.name}>{traveler.name}</Text>
+          <View style={[styles.presencePill, online && styles.presencePillOn]}>
+            <View style={[styles.presencePillDot, online && styles.presencePillDotOn]} />
+            <Text style={[styles.presencePillText, online && styles.presencePillTextOn]}>
+              {online ? t('msg.online') : t('msg.offline')}
+            </Text>
+          </View>
           {traveler.verified && (
             <View style={styles.verifiedPill}>
               <Ionicons name="shield-checkmark" size={13} color="#059669" />
@@ -156,6 +169,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
   avatarWrap: { alignSelf: 'center', position: 'relative' },
+  presencePill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'center',
+    backgroundColor: '#F1F5F9', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, marginTop: 6,
+  },
+  presencePillOn: { backgroundColor: '#ECFDF5' },
+  presencePillDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#94A3B8' },
+  presencePillDotOn: { backgroundColor: '#22C55E' },
+  presencePillText: { fontSize: 12, fontWeight: '700', color: colors.muted },
+  presencePillTextOn: { color: '#16A34A' },
   avatar: {
     width: 92, height: 92, borderRadius: 46,
     backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center',

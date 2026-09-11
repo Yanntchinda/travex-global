@@ -214,7 +214,14 @@ export default function SignInScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       {/* Fond dégradé océan */}
-      <LinearGradient colors={[OCEAN.bg, '#061627', OCEAN.ocean800]} style={StyleSheet.absoluteFill} />
+      {/* Photo de fond : voyageur face à un avion (nuit) — cf. dossier assets/hero */}
+      <Image source={require('../../../assets/hero/login-bg.jpg')} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      {/* Voile dégradé sombre par-dessus la photo : garde le texte lisible
+          et conserve l'ambiance « océan nuit » de la marque. */}
+      <LinearGradient
+        colors={['rgba(2,6,23,0.80)', 'rgba(4,20,40,0.86)', 'rgba(12,74,110,0.78)']}
+        style={StyleSheet.absoluteFill}
+      />
 
       {/* Orbes lumineux */}
       <View style={[styles.orb, styles.orb1]} />

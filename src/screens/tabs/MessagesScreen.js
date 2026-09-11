@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { EmptyState } from '../../components/common';
 import { getConversations, sendChatMessage } from '../../services/supabase';
+import { isOnline, subscribePresence } from '../../services/presence';
 
 // ---------------------------------------------------------------------------
 // Écran d'appel via Internet (VoIP).
@@ -71,6 +72,12 @@ function CallModal({ visible, onClose, name, initials }) {
 function Conversation({ convo, onBack }) {
   const { t } = useLanguage();
   const [callOpen, setCallOpen] = useState(false);
+  // Présence temps réel : « En ligne » / « Hors ligne » sous le nom.
+  const [online, setOnline] = useState(isOnline(convo.id));
+  useEffect(() => {
+    setOnline(isOnline(convo.id));
+    return subscribePresence(({ id, online: on }) => { if (id === convo.id) setOnline(on); });
+  }, [convo.id]);
   const [messages, setMessages] = useState(convo.messages || []);
   const [draft, setDraft] = useState('');
   const [seen, setSeen] = useState(false); // accusé de lecture : "vu" par l'autre
@@ -110,7 +117,9 @@ function Conversation({ convo, onBack }) {
         <View style={styles.chatAvatar}><Text style={styles.chatAvatarText}>{convo.initials || '?'}</Text></View>
         <View style={{ flex: 1, marginLeft: spacing.sm }}>
           <Text style={styles.chatName}>{convo.name}</Text>
-          <Text style={styles.chatStatus}><View style={styles.onlineDot} /> {t('msg.online')}</Text>
+          <Text style={[styles.chatStatus, !online && styles.chatStatusOff]}>
+            <View style={[styles.onlineDot, !online && styles.onlineDotOff]} /> {online ? t('msg.online') : t('msg.offline')}
+          </Text>
         </View>
         <TouchableOpacity style={styles.callBtnIcon} activeOpacity={0.7} onPress={() => setCallOpen(true)}>
           <Ionicons name="call-outline" size={20} color={colors.primary} />
@@ -236,12 +245,18 @@ export default function MessagesScreen({ navigation, route }) {
         )}
         {conversations.map((c) => (
           <TouchableOpacity key={c.id} style={styles.convo} onPress={() => openConversation(c.id)} activeOpacity={0.85}>
-            <View style={styles.convoAvatar}>
-              <Text style={styles.convoAvatarText}>{c.initials || 'C'}</Text>
+            <View>
+              <View style={styles.convoAvatar}>
+                <Text style={styles.convoAvatarText}>{c.initials || 'C'}</Text>
+              </View>
+              <View style={[styles.presenceDot, isOnline(c.id) && styles.presenceDotOn]} />
             </View>
             <View style={{ flex: 1, marginLeft: spacing.md }}>
               <Text style={styles.convoName}>{c.name}</Text>
               <Text style={styles.convoLast} numberOfLines={1}>{c.last}</Text>
+              <Text style={[styles.convoPresence, isOnline(c.id) && styles.convoPresenceOn]}>
+                {isOnline(c.id) ? t('msg.online') : t('msg.offline')}
+              </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={styles.convoTime}>{c.time}</Text>
@@ -302,6 +317,15 @@ const styles = StyleSheet.create({
   chatName: { fontSize: 16, fontWeight: '700', color: colors.text },
   chatStatus: { fontSize: 12, color: colors.green, flexDirection: 'row', alignItems: 'center' },
   onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green, marginRight: 4 },
+  onlineDotOff: { backgroundColor: '#94A3B8' },
+  chatStatusOff: { color: colors.muted },
+  presenceDot: {
+    position: 'absolute', right: -1, bottom: -1, width: 13, height: 13, borderRadius: 7,
+    backgroundColor: '#94A3B8', borderWidth: 2.5, borderColor: colors.white,
+  },
+  presenceDotOn: { backgroundColor: '#22C55E' },
+  convoPresence: { fontSize: 11, color: colors.muted, fontWeight: '600', marginTop: 2 },
+  convoPresenceOn: { color: '#16A34A' },
   chatList: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   // Le corps du chat se termine AU-DESSUS de la barre d'onglets flottante :
   // la zone de saisie reste ainsi toujours visible et accessible.
