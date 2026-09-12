@@ -216,10 +216,11 @@ export default function SignInScreen({ navigation }) {
       {/* Fond dégradé océan */}
       {/* Photo de fond : voyageur face à un avion (nuit) — cf. dossier assets/hero */}
       <Image source={require('../../../assets/hero/login-bg.jpg')} style={StyleSheet.absoluteFill} resizeMode="cover" />
-      {/* Voile dégradé sombre par-dessus la photo : garde le texte lisible
-          et conserve l'ambiance « océan nuit » de la marque. */}
+      {/* Voile léger : la photo (voyageur + valise) reste bien VISIBLE au
+          premier plan ; le bas est plus sombre pour la carte de connexion
+          (fond blanc plein : contraste garanti dans tous les cas). */}
       <LinearGradient
-        colors={['rgba(2,6,23,0.80)', 'rgba(4,20,40,0.86)', 'rgba(12,74,110,0.78)']}
+        colors={['rgba(2,6,23,0.42)', 'rgba(2,6,23,0.58)', 'rgba(12,74,110,0.72)']}
         style={StyleSheet.absoluteFill}
       />
 

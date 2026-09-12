@@ -115,9 +115,19 @@ export default function ProfileScreen({ navigation }) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* En-tête bleu */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.gear} onPress={() => navigation.navigate('NotificationSettings')}>
-          <Ionicons name="settings-outline" size={24} color={colors.white} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          {/* Bascule Clair / Sombre — l'icône montre le mode obtenu au clic */}
+          <TouchableOpacity
+            style={styles.gear}
+            activeOpacity={0.7}
+            onPress={() => setMode(mode === 'dark' ? 'light' : 'dark')}
+          >
+            <Ionicons name={mode === 'dark' ? 'sunny' : 'moon'} size={22} color={colors.white} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.gear} onPress={() => navigation.navigate('NotificationSettings')}>
+            <Ionicons name="settings-outline" size={24} color={colors.white} />
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity style={styles.avatarTouch} activeOpacity={0.85} onPress={pickPhoto}>
           <View style={styles.avatar}>
             {user?.avatar ? (
@@ -166,32 +176,6 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity style={styles.verifyBtn} onPress={() => Alert.alert(t('profile.settings'), t('profile.banner.todo'))}>
           <Text style={styles.verifyText}>{t('profile.verify')}</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Apparence : mode clair / sombre */}
-      <View style={styles.themeCard}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Ionicons name={mode === 'dark' ? 'moon' : 'sunny'} size={18} color={colors.primary} />
-          <Text style={styles.themeTitle}>{t('profile.appearance')}</Text>
-        </View>
-        <View style={styles.themeChips}>
-          <TouchableOpacity
-            style={[styles.themeChip, mode === 'light' && styles.themeChipActive]}
-            activeOpacity={0.8}
-            onPress={() => setMode('light')}
-          >
-            <Ionicons name="sunny-outline" size={15} color={mode === 'light' ? colors.white : colors.muted} />
-            <Text style={[styles.themeChipText, mode === 'light' && styles.themeChipTextActive]}>{t('theme.light')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.themeChip, mode === 'dark' && styles.themeChipActive]}
-            activeOpacity={0.8}
-            onPress={() => setMode('dark')}
-          >
-            <Ionicons name="moon-outline" size={15} color={mode === 'dark' ? colors.white : colors.muted} />
-            <Text style={[styles.themeChipText, mode === 'dark' && styles.themeChipTextActive]}>{t('theme.dark')}</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       {/* Menu */}
@@ -243,7 +227,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: '5%', borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
     alignItems: 'center',
   },
-  gear: { alignSelf: 'flex-end', padding: 8 },
+  gear: { padding: 8 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
   avatarTouch: { marginTop: spacing.sm },
   avatar: {
     width: 84, height: 84, borderRadius: 42, backgroundColor: colors.white,
@@ -263,20 +248,6 @@ const styles = StyleSheet.create({
   email: { color: 'rgba(255,255,255,0.8)', fontSize: 14, textAlign: 'center', marginTop: 2 },
   meta: { color: 'rgba(255,255,255,0.75)', fontSize: 13, textAlign: 'center', marginTop: 2 },
   stats: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.lg },
-  themeCard: {
-    backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg,
-    marginHorizontal: '5%', marginTop: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
-  },
-  themeTitle: { fontSize: 14, fontWeight: '800', color: colors.text },
-  themeChips: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  themeChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, height: 42,
-    borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border,
-    backgroundColor: colors.inputBg, justifyContent: 'center',
-  },
-  themeChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  themeChipText: { fontSize: 13, fontWeight: '700', color: colors.muted },
-  themeChipTextActive: { color: colors.white },
   stat: { alignItems: 'center', width: 90 },
   statNum: { color: colors.white, fontWeight: '800', fontSize: 20 },
   statLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 2 },

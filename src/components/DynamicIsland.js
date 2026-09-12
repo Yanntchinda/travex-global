@@ -125,8 +125,9 @@ export default function DynamicIsland({ onPress }) {
         style={{ opacity: mounted ? 1 : 0 }}
         pointerEvents={mounted ? 'auto' : 'none'}
       >
-        {/* Notification « nue » : aucun fond, aucune pilule — juste le
-            message qui sort, reste ~4,5 s puis se referme tout seul. */}
+        {/* Notification : pastille sombre discrète derrière le message
+            (lisible sur tout écran). Pas de rond d'ouverture, pas d'icône :
+            le message sort, reste ~4,5 s puis se referme tout seul. */}
         {mounted && (
           <Animated.View
             style={[
@@ -153,14 +154,14 @@ const styles = StyleSheet.create({
     position: 'absolute', top: TOP_OFFSET, left: 0, right: 0,
     alignItems: 'center', zIndex: 9999, elevation: 30,
   },
-  // Message seul, sans fond : l'ombre du texte le rend lisible sur tout écran.
+  // Message avec fond sombre arrondi (contraste garanti), sans rond ni icône.
   messageWrap: {
-    maxWidth: 340, paddingHorizontal: 18, alignItems: 'center',
+    maxWidth: 340, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center',
+    backgroundColor: 'rgba(2,6,23,0.92)', borderRadius: 20,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35,
+    shadowRadius: 18, elevation: 12,
   },
   message: {
-    color: '#FFFFFF', fontSize: 14, fontWeight: '800', textAlign: 'center', lineHeight: 19,
-    textShadowColor: 'rgba(2,6,23,0.9)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
+    color: '#FFFFFF', fontSize: 13, fontWeight: '800', textAlign: 'center', lineHeight: 18,
   },
 });
