@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Modal,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow } from '../../theme/theme';
@@ -10,6 +8,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { EmptyState } from '../../components/common';
 import { getConversations, sendChatMessage, markConversationRead } from '../../services/supabase';
 import { isOnline, subscribePresence } from '../../services/presence';
+import AppModal from '../../components/AppModal';
 
 // ---------------------------------------------------------------------------
 // Écran d'appel via Internet (VoIP).
@@ -53,7 +52,7 @@ function CallModal({ visible, onClose, name, initials, calleeId, onMissed }) {
   const status = phase === 'ringing' ? t('msg.ringing') : `${t('msg.inCall')} · ${mmss}`;
 
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <AppModal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.callOverlay}>
         <View style={styles.callAvatar}><Text style={styles.callAvatarText}>{initials || '?'}</Text></View>
         <Text style={styles.callName}>{name}</Text>
@@ -76,7 +75,7 @@ function CallModal({ visible, onClose, name, initials, calleeId, onMissed }) {
           <Text style={styles.callEndLabel}>{t('msg.endCall')}</Text>
         </TouchableOpacity>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

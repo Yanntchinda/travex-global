@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, Image,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow } from '../../theme/theme';
@@ -13,6 +11,7 @@ import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import Gate from '../../components/Gate';
+import AppModal from '../../components/AppModal';
 
 function OptionSheet({ visible, onClose, onChoose, t }) {
   // « Masquer l'annonce » n'apparaît plus ici : le masquage se gère
@@ -23,7 +22,7 @@ function OptionSheet({ visible, onClose, onChoose, t }) {
     { key: 'report', icon: 'flag-outline', label: t('report.title'), danger: true },
   ];
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <AppModal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
         <View style={styles.sheet}>
           <View style={styles.sheetHandle} />
@@ -35,7 +34,7 @@ function OptionSheet({ visible, onClose, onChoose, t }) {
           ))}
         </View>
       </TouchableOpacity>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -337,7 +336,7 @@ export default function TripDetailScreen({ route, navigation }) {
       <OptionSheet visible={sheet} onClose={() => setSheet(false)} onChoose={onOption} t={t} />
 
       {/* Confirmation de réservation in-app */}
-      <Modal transparent visible={!!bookedInfo} animationType="fade" onRequestClose={() => setBookedInfo(null)}>
+      <AppModal transparent visible={!!bookedInfo} animationType="fade" onRequestClose={() => setBookedInfo(null)}>
         <TouchableOpacity style={styles.bookOverlay} activeOpacity={1} onPress={() => setBookedInfo(null)}>
           <View style={styles.bookModal}>
             <View style={styles.bookIcon}><Ionicons name="checkmark" size={30} color={colors.white} /></View>
@@ -350,7 +349,7 @@ export default function TripDetailScreen({ route, navigation }) {
             </View>
           </View>
         </TouchableOpacity>
-      </Modal>
+      </AppModal>
     </SafeAreaView>
   );
 }

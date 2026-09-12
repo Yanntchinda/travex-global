@@ -1,8 +1,5 @@
 import React, { useState, useRef } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  Modal, KeyboardAvoidingView, Platform, Pressable, Image,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +7,7 @@ import { colors, spacing, radius } from '../../theme/theme';
 import { signIn, registerUser } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import AppModal from '../../components/AppModal';
 
 // Palette "océan" de la maquette (fond sombre + accents ciel).
 const OCEAN = {
@@ -355,7 +353,7 @@ export default function SignInScreen({ navigation }) {
       </KeyboardAvoidingView>
 
       {/* Modale : langue */}
-      <Modal transparent visible={langOpen} animationType="fade" onRequestClose={() => setLangOpen(false)}>
+      <AppModal transparent visible={langOpen} animationType="fade" onRequestClose={() => setLangOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <TouchableOpacity onPress={() => setLangOpen(false)} style={styles.modalClose}><Ionicons name="close" size={18} color="#94A3B8" /></TouchableOpacity>
@@ -372,10 +370,10 @@ export default function SignInScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* Modale : mot de passe oublié */}
-      <Modal transparent visible={forgotOpen} animationType="fade" onRequestClose={() => setForgotOpen(false)}>
+      <AppModal transparent visible={forgotOpen} animationType="fade" onRequestClose={() => setForgotOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <TouchableOpacity onPress={() => setForgotOpen(false)} style={styles.modalClose}><Ionicons name="close" size={18} color="#94A3B8" /></TouchableOpacity>
@@ -394,7 +392,7 @@ export default function SignInScreen({ navigation }) {
             </Pressable>
           </View>
         </View>
-      </Modal>
+      </AppModal>
 
       {/* Toast */}
       {toast && (

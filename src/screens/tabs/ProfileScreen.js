@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Image,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,6 +10,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import {updateUser, getRatings, fetchUserAnnouncements } from '../../services/supabase';
 import { APP } from '../../config';
+import AppModal from '../../components/AppModal';
 
 export default function ProfileScreen({ navigation }) {
   const { user, signOut, setUser } = useAuth();
@@ -198,7 +197,7 @@ export default function ProfileScreen({ navigation }) {
       </ScrollView>
 
       {/* Modale de déconnexion (fiable sur web + mobile) */}
-      <Modal transparent visible={showLogout} animationType="fade" onRequestClose={() => setShowLogout(false)}>
+      <AppModal transparent visible={showLogout} animationType="fade" onRequestClose={() => setShowLogout(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowLogout(false)}>
           <View style={styles.logoutCard}>
             <View style={styles.logoutIcon}><Ionicons name="log-out-outline" size={26} color={colors.red} /></View>
@@ -215,7 +214,7 @@ export default function ProfileScreen({ navigation }) {
             </View>
           </View>
         </TouchableOpacity>
-      </Modal>
+      </AppModal>
     </SafeAreaView>
   );
 }

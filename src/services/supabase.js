@@ -698,6 +698,15 @@ export async function ensureShipmentsSeeded() {
       counterparty: { name: 'Sophie M.', avatar: null, verified: true }, tripId: null,
       createdAt: now - 21600000,
     },
+    {
+      // Colis déjà remis contre PIN : le gain est LIBÉRÉ (disponible au retrait).
+      id: 's4', ref: 'GP-5812', qrData: null, role: 'traveler', status: 'delivered', pin: '8402',
+      parcel: 'Matériel électronique', weight: 8, pricePerKg: 12, total: 96,
+      from: 'Douala', to: 'Paris',
+      fromCode: 'DLA', toCode: 'CDG', transport: 'Avion',
+      counterparty: { name: 'Erick T.', avatar: null, verified: true }, tripId: null,
+      createdAt: now - 172800000,
+    },
   ];
   await localStore.set(KEY_SHIPMENTS, list);
   return list;
@@ -730,9 +739,52 @@ export async function getShipments() {
   return next;
 }
 
+// ---------- Paiements & gains (phase 1 : simulation locale, ZÉRO API) ----------
+// Sans passerelle de paiement intégrée, chaque transaction de l'app produit
+// une écriture dans le registre local :
+//   - les colis que VOUS EXPÉDIEZ (Mes réservations)  → PAIEMENTS (payés à la réservation) ;
+//   - les colis que VOUS TRANSPORTEZ (KiloPass)       → GAINS (libérés à la remise contre PIN).
+// En phase 2, ces mêmes écritures seront émises par le backend + les passerelles
+// réelles (Mobile Money, carte, crypto) — l'affichage restera identique.
+
+// Historique des paiements de l'utilisateur (expéditeur).
+export async function getPayments() {
+  const items = await getShipments();
+  return (items || [])
+    .filter((s) => s.role === 'sender')
+    .map((s) => ({
+      id: s.id,
+      ref: s.ref,
+      label: `${s.parcel || 'Colis'} — ${s.from} → ${s.to}`,
+      kg: Number(s.weight) || 0,
+      amount: Number(s.total) || 0,
+      status: 'paid', // payé au moment de la réservation (simulation)
+      method: 'travex.pay.simulated',
+      at: s.createdAt || Date.now(),
+    }))
+    .sort((a, b) => b.at - a.at);
+}
+
+// Historique des gains de l'utilisateur (voyageur / KiloPass).
+// Un gain n'est DISPONIBLE qu'après la remise du colis (PIN saisi → delivered).
+export async function getEarnings() {
+  const items = await getShipments();
+  return (items || [])
+    .filter((s) => s.role === 'traveler')
+    .map((s) => ({
+      id: s.id,
+      ref: s.ref,
+      label: `${s.parcel || 'Colis'} — ${s.from} → ${s.to}`,
+      kg: Number(s.weight) || 0,
+      amount: Number(s.total) || 0,
+      status: s.status === 'delivered' ? 'available' : 'pending',
+      at: s.createdAt || Date.now(),
+    }))
+    .sort((a, b) => b.at - a.at);
+}
+
 // Crée (ou met à jour) le suivi d'un colis. Génère PIN + QR quand le vol atterrit.
-export async function upsertShipment(data) {
-  const list = await localStore.get(KEY_SHIPMENTS, []);
+export async function upsertShipment(data) {  const list = await localStore.get(KEY_SHIPMENTS, []);
   const idx = list.findIndex((s) => s.id === data.id);
   const next = { ...data };
   if (next.status === 'landed' && !next.pin) {

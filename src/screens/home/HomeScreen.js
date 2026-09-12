@@ -1,8 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  View, Text, StyleSheet, TextInput, TouchableOpacity,
-  FlatList, RefreshControl, Modal, ScrollView, Image, Dimensions,
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, RefreshControl, ScrollView, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow } from '../../theme/theme';
@@ -14,6 +11,7 @@ import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CITIES } from '../../data/mockData';
+import AppModal from '../../components/AppModal';
 
 const HERO_SLIDES = [
   { image: require('../../../assets/hero/hero1.jpg') },
@@ -29,7 +27,7 @@ function PublishChoiceModal({ visible, onClose, onChoose }) {
     { key: 'demande', icon: 'trending-up', title: t('publish.request'), desc: t('publish.requestDesc'), color: colors.accent },
   ];
   return (
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
         <View style={styles.sheet}>
           <View style={styles.sheetHandle} />
@@ -51,7 +49,7 @@ function PublishChoiceModal({ visible, onClose, onChoose }) {
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
-    </Modal>
+    </AppModal>
   );
 }
 

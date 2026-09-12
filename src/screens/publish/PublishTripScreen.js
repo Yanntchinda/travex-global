@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow, TRANSPORT_MODES } from '../../theme/theme';
@@ -10,6 +10,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { CATEGORIES } from '../../i18n/translations';
 import Gate from '../../components/Gate';
 import { createTrip } from '../../services/supabase';
+import AppModal from '../../components/AppModal';
 
 export default function PublishTripScreen({ route, navigation }) {
   const { user } = useAuth();
@@ -321,7 +322,7 @@ export default function PublishTripScreen({ route, navigation }) {
       </ScrollView>
 
       {/* Confirmation de publication in-app */}
-      <Modal transparent visible={!!success} animationType="fade" onRequestClose={() => { setSuccess(null); navigation.goBack(); }}>
+      <AppModal transparent visible={!!success} animationType="fade" onRequestClose={() => { setSuccess(null); navigation.goBack(); }}>
         <View style={styles.modalOverlay}>
           <View style={styles.successCard}>
             <View style={styles.successIcon}><Ionicons name="checkmark" size={30} color={colors.white} /></View>
@@ -330,7 +331,7 @@ export default function PublishTripScreen({ route, navigation }) {
             <Button title={t('demand.close') || 'OK'} onPress={() => { setSuccess(null); navigation.goBack(); }} style={{ marginTop: spacing.lg, width: '100%' }} />
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </SafeAreaView>
   );
 }

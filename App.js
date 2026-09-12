@@ -46,6 +46,8 @@ import ReportScreen from './src/screens/report/ReportScreen';
 import PublishTripScreen from './src/screens/publish/PublishTripScreen';
 import PersonalInfoScreen from './src/screens/profile/PersonalInfoScreen';
 import PaymentScreen from './src/screens/profile/PaymentScreen';
+import PaymentsHistoryScreen from './src/screens/profile/PaymentsHistoryScreen';
+import EarningsScreen from './src/screens/profile/EarningsScreen';
 import NotificationSettingsScreen from './src/screens/profile/NotificationSettingsScreen';
 import SecurityScreen from './src/screens/profile/SecurityScreen';
 import LanguageScreen from './src/screens/profile/LanguageScreen';
@@ -114,6 +116,8 @@ function RootNavigator() {
       <Stack.Screen name="Admin" component={AdminScreen} />
       <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
+      <Stack.Screen name="PaymentsHistory" component={PaymentsHistoryScreen} />
+      <Stack.Screen name="Earnings" component={EarningsScreen} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
       <Stack.Screen name="Security" component={SecurityScreen} />
       <Stack.Screen name="Language" component={LanguageScreen} />

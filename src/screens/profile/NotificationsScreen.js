@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow } from '../../theme/theme';
@@ -7,6 +7,7 @@ import { ScreenHeader, EmptyState, Button } from '../../components/common';
 import { getNotifications, markNotificationsRead } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import AppModal from '../../components/AppModal';
 
 export default function NotificationsScreen({ navigation }) {
   const { user } = useAuth();
@@ -67,7 +68,7 @@ export default function NotificationsScreen({ navigation }) {
       </ScrollView>
 
       {/* Modale de consultation d'une notification */}
-      <Modal transparent visible={!!selected} animationType="fade" onRequestClose={() => setSelected(null)}>
+      <AppModal transparent visible={!!selected} animationType="fade" onRequestClose={() => setSelected(null)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelected(null)}>
           <View style={styles.detailCard}>
             <View style={styles.detailIcon}>
@@ -79,7 +80,7 @@ export default function NotificationsScreen({ navigation }) {
             <Button title={t('demand.close')} variant="outline" onPress={() => setSelected(null)} style={{ marginTop: spacing.lg, width: '100%' }} />
           </View>
         </TouchableOpacity>
-      </Modal>
+      </AppModal>
     </SafeAreaView>
   );
 }

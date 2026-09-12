@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View, Text, Image, StyleSheet, ScrollView, Modal, TouchableOpacity,
-  TextInput, Alert, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow } from '../../theme/theme';
@@ -11,6 +8,7 @@ import { createProposal, fetchTripDetail } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CITIES } from '../../data/mockData';
+import AppModal from '../../components/AppModal';
 
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&q=80&w=400';
 
@@ -37,7 +35,7 @@ function ProposalModal({ demand, visible, onClose, onSubmit, submitting }) {
   };
 
   return (
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
         <View style={styles.sheet}>
           <View style={styles.sheetHandle} />
@@ -87,7 +85,7 @@ function ProposalModal({ demand, visible, onClose, onSubmit, submitting }) {
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </AppModal>
   );
 }
 

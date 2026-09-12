@@ -1,8 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
-  Image, Alert, KeyboardAvoidingView, Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
@@ -12,6 +9,7 @@ import { EmptyState } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { getShipments, setShipmentStatus } from '../../services/supabase';
+import AppModal from '../../components/AppModal';
 
 const AVATARS = {
   'Sophie M.': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
@@ -73,7 +71,7 @@ function ScannerModal({ visible, onClose, onScan, shipment }) {
   };
 
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <AppModal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={c.scanOverlay}>
         <View style={c.scanCard}>
           <CloseBtn onPress={onClose} />
@@ -100,7 +98,7 @@ function ScannerModal({ visible, onClose, onScan, shipment }) {
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -124,7 +122,7 @@ function PinModal({ visible, onClose, onValidate }) {
     Alert.alert(t('track.deliveredSuccess'), t('track.pinOk'));
   };
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <AppModal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={c.scanOverlay}>
         <View style={c.pinCard}>
           <CloseBtn onPress={onClose} />
@@ -159,7 +157,7 @@ function PinModal({ visible, onClose, onValidate }) {
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -168,7 +166,7 @@ function QrModal({ visible, onClose, shipment }) {
   const { t } = useLanguage();
   if (!shipment) return null;
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <AppModal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={c.scanOverlay}>
         <View style={c.qrCard}>
           <CloseBtn onPress={onClose} />
@@ -195,7 +193,7 @@ function QrModal({ visible, onClose, shipment }) {
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -222,7 +220,7 @@ function ChatModal({ visible, onClose, name }) {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60);
   };
   return (
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
+    <AppModal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={c.chatOverlay}>
         <View style={c.chatCard}>
           <View style={c.chatHead}>
@@ -258,7 +256,7 @@ function ChatModal({ visible, onClose, name }) {
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

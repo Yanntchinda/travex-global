@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Image, ScrollView as SV } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ScrollView as SV } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow } from '../../theme/theme';
@@ -10,6 +10,7 @@ import {
   fetchPendingUsers, verifyUser,
 } from '../../services/supabase';
 import { useLanguage } from '../../context/LanguageContext';
+import AppModal from '../../components/AppModal';
 
 export default function AdminScreen({ navigation }) {
   const { t } = useLanguage();
@@ -151,7 +152,7 @@ export default function AdminScreen({ navigation }) {
       </ScrollView>
 
       {/* Modal détails d'une annonce (billet, catégories, tarif) */}
-      <Modal transparent visible={!!viewAnn} animationType="slide" onRequestClose={() => setViewAnn(null)}>
+      <AppModal transparent visible={!!viewAnn} animationType="slide" onRequestClose={() => setViewAnn(null)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setViewAnn(null)}>
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
@@ -208,10 +209,10 @@ export default function AdminScreen({ navigation }) {
             </View>
           </View>
         </TouchableOpacity>
-      </Modal>
+      </AppModal>
 
       {/* Modal détails d'un profil (références + CNI) */}
-      <Modal transparent visible={!!viewUser} animationType="slide" onRequestClose={() => setViewUser(null)}>
+      <AppModal transparent visible={!!viewUser} animationType="slide" onRequestClose={() => setViewUser(null)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setViewUser(null)}>
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
@@ -242,7 +243,7 @@ export default function AdminScreen({ navigation }) {
             </View>
           </View>
         </TouchableOpacity>
-      </Modal>
+      </AppModal>
     </SafeAreaView>
   );
 }
