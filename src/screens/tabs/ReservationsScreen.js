@@ -579,7 +579,7 @@ const cc = StyleSheet.create({
   routeCity: { fontSize: 14, fontWeight: '800', color: colors.text, marginTop: 3 },
   routeMid: { flexDirection: 'column', alignItems: 'center', paddingHorizontal: 8 },
   routeLine: { width: 2, height: 18, backgroundColor: colors.green, marginVertical: 3, opacity: 0.5 },
-  routeState: { fontSize: 9, fontWeight: '800', color: '#047857' },
+  routeState: { fontSize: 9, fontWeight: '800', color: colors.green },
   pinZone: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#A7F3D0', borderRadius: 16, padding: spacing.md },
   pinIconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#10B981', alignItems: 'center', justifyContent: 'center' },
   pinTitle: { fontSize: 13, fontWeight: '800', color: '#065F46' },

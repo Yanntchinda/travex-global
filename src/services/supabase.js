@@ -816,23 +816,41 @@ export async function getConversations() {
 }
 
 // Retourne la conversation et le message ajouté.
-export async function sendChatMessage({ convoId, from, text, name }) {
+// Règle « envoyé = lu » : un message que J'ENVOIE marque la conversation
+// comme lue (badge remis à zéro, aucune capsule) ; seul un message REÇU
+// crée du non-lu et déclenche une notification.
+export async function sendChatMessage({ convoId, from, text, name, kind }) {
   const list = await localStore.get(KEY_CONVERSATIONS, []);
   const idx = list.findIndex((c) => c.id === convoId);
   const now = new Date();
   const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  const msg = { id: 'm_' + Date.now(), from, text, time };
+  const msg = { id: 'm_' + Date.now(), from, text, time, ...(kind ? { kind } : {}) };
   let updated;
   if (idx >= 0) {
-    updated = { ...list[idx], messages: [...list[idx].messages, msg], last: text, time };
+    const unread = from === 'them' ? (list[idx].unread || 0) + 1 : 0;
+    updated = { ...list[idx], messages: [...list[idx].messages, msg], last: text, time, unread };
     list[idx] = updated;
   } else {
-    updated = { id: convoId, name: name || 'Correspondant', initials: (name || 'C').slice(0, 2).toUpperCase(), last: text, time, messages: [msg], unread: 1 };
+    updated = { id: convoId, name: name || 'Correspondant', initials: (name || 'C').slice(0, 2).toUpperCase(), last: text, time, messages: [msg], unread: from === 'them' ? 1 : 0 };
     list.unshift(updated);
   }
   await localStore.set(KEY_CONVERSATIONS, list);
-  await addNotification({ type: 'message', name: name || 'Correspondant', text });
+  // Capsule UNIQUEMENT pour un message reçu (jamais pour ses propres envois).
+  if (from === 'them') {
+    await addNotification({ type: 'message', name: name || 'Correspondant', text });
+  }
   return { conversation: updated, message: msg };
+}
+
+// Marque durablement une conversation comme lue (badge « non lus » à zéro).
+export async function markConversationRead(convoId) {
+  const list = await localStore.get(KEY_CONVERSATIONS, []);
+  const idx = list.findIndex((c) => c.id === convoId);
+  if (idx >= 0 && list[idx].unread) {
+    list[idx] = { ...list[idx], unread: 0 };
+    await localStore.set(KEY_CONVERSATIONS, list);
+  }
+  return list;
 }
 
 // Crée/retrouve une conversation vers un interlocuteur (voyageur, expéditeur...).

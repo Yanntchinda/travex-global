@@ -8,7 +8,7 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { EmptyState } from '../../components/common';
-import { getConversations, sendChatMessage } from '../../services/supabase';
+import { getConversations, sendChatMessage, markConversationRead } from '../../services/supabase';
 import { isOnline, subscribePresence } from '../../services/presence';
 
 // ---------------------------------------------------------------------------
@@ -236,7 +236,10 @@ export default function MessagesScreen({ navigation, route }) {
     setConversations(list || []);
     const convo = (list || []).find((c) => c.id === id);
     if (convo) {
+      // Ouvrir la conversation la marque comme LUE, de façon durable
+      // (le badge « non lus » ne revient pas au rechargement).
       setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+      markConversationRead(id).catch(() => {});
       setOpenChat(convo);
     } else {
       setOpenChat({ id, name: 'Correspondant', initials: 'C', messages: [] });

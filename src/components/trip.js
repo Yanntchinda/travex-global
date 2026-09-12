@@ -9,7 +9,10 @@ const FLAG = { '🇨🇲': '🇨🇲' };
 
 export function CountryFlag({ city }) {
   const c = CITIES[city];
-  return <Text style={{ fontSize: 18 }}>{c ? c.flag : '🌍'}</Text>;
+  // `color` obligatoire : sur le web (Windows/Chrome), les emojis drapeaux
+  // s'affichent en LETTRES (« CM », « FR »…) — sans couleur explicite elles
+  // restent noires et deviennent invisibles en mode sombre.
+  return <Text style={{ fontSize: 18, color: colors.text }}>{c ? c.flag : '🌍'}</Text>;
 }
 
 function modeInfo(transport) {
