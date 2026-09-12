@@ -354,6 +354,7 @@ export const translations = {
     'rate.title': 'Noter ce transporteur',
     'rate.reviews': 'avis',
     'rate.hint': 'Touchez les étoiles pour noter de 1 à 5.',
+    'rate.already': 'Vous avez déjà noté ce transporteur — un profil ne se note qu’une seule fois.',
     'rate.submit': 'Envoyer ma note',
     'rate.thankyou': 'Merci pour votre note !',
     'rate.myTitle': 'Mes évaluations',

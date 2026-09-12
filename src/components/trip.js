@@ -280,8 +280,8 @@ const styles = StyleSheet.create({
   gaugeAvail: { backgroundColor: colors.primary, flex: 1 },
   gaugeRowBottom: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 5 },
   gaugeLabel: { fontSize: 11, color: colors.muted },
-  gaugeModalLeft: { fontSize: 12, fontWeight: '600' },
-  gaugeModalRemaining: { fontSize: 12, fontWeight: '800', color: colors.primary },
+  gaugeModalLeft: { fontSize: 12, fontWeight: '600', color: colors.text },
+  gaugeModalRemaining: { fontSize: 12, fontWeight: '800', color: colors.text },
   travelerBar: {
     backgroundColor: colors.inputBg, borderRadius: radius.md, padding: spacing.md,
     marginBottom: spacing.md,

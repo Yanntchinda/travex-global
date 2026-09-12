@@ -8,7 +8,7 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { ScreenHeader, Stars, Badge, Loading, Button, RatingInput } from '../../components/common';
 import { CountryFlag, TransportIcon, RouteLine, CategoryChips, PricePerKg, CapacityGauge } from '../../components/trip';
 import Slider from '../../components/Slider';
-import { fetchTripDetail, bookKg, rateTarget, ensureConversation } from '../../services/supabase';
+import { fetchTripDetail, bookKg, rateTarget, hasRatedTarget, ensureConversation } from '../../services/supabase';
 import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -50,8 +50,18 @@ export default function TripDetailScreen({ route, navigation }) {
   const [selKg, setSelKg] = useState(5);
   const [ratingValue, setRatingValue] = useState(0);
   const [rated, setRated] = useState(false);
+  // Note déjà donnée par CET utilisateur à ce transporteur (null = pas noté).
+  // Un même utilisateur ne peut pas noter deux fois le même profil.
+  const [myScore, setMyScore] = useState(null);
 
-  const loadDetail = () => { fetchTripDetail(id).then(setDetail).catch(() => {}); };
+  const loadDetail = () => {
+    fetchTripDetail(id).then((d) => {
+      setDetail(d);
+      if (user) {
+        hasRatedTarget(d.travelerId || id, user.email).then((s) => setMyScore(s)).catch(() => {});
+      }
+    }).catch(() => {});
+  };
   useEffect(() => { loadDetail(); }, [id]);
 
   if (!detail) return <Loading />;
@@ -111,8 +121,15 @@ export default function TripDetailScreen({ route, navigation }) {
       Alert.alert(t('rate.title'), t('rate.hint'));
       return;
     }
-    const res = await rateTarget(detail.travelerId || id, ratingValue);
+    // Un profil ne se note pas deux fois : refus si une note existe déjà.
+    const res = await rateTarget(detail.travelerId || id, ratingValue, user?.email);
+    if (res.already) {
+      setMyScore((prev) => prev ?? ratingValue);
+      setRatingValue(0);
+      return;
+    }
     setRated(true);
+    setMyScore(ratingValue);
     setRatingValue(0);
     // Met à jour immédiatement les étoiles / la moyenne (elles "s'allument" à chaque avis).
     setDetail((prev) => (prev ? { ...prev, traveler: { ...prev.traveler, rating: res.average, reviews: res.count } } : prev));
@@ -261,9 +278,21 @@ export default function TripDetailScreen({ route, navigation }) {
             <Stars value={traveler.rating || 0} size={20} />
             <Text style={styles.rateScore}>{(traveler.rating || 0).toFixed(1)} / 5 · {traveler.reviews || 0} {t('rate.reviews')}</Text>
           </View>
-          <Text style={styles.rateHint}>{t('rate.hint')}</Text>
-          <RatingInput value={ratingValue} onChange={(v) => { setRatingValue(v); setRated(false); }} size={34} />
-          <Button title={rated ? t('rate.thankyou') : t('rate.submit')} icon="star" onPress={submitRating} style={{ marginTop: spacing.md }} />
+          {myScore != null ? (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Stars value={myScore} size={22} />
+                <Text style={styles.rateScore}>{myScore} / 5</Text>
+              </View>
+              <Text style={styles.rateHint}>{t('rate.already')}</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.rateHint}>{t('rate.hint')}</Text>
+              <RatingInput value={ratingValue} onChange={(v) => { setRatingValue(v); setRated(false); }} size={34} />
+              <Button title={rated ? t('rate.thankyou') : t('rate.submit')} icon="star" onPress={submitRating} style={{ marginTop: spacing.md }} />
+            </>
+          )}
         </View>
 
         {prohibited.length > 0 && (
@@ -356,11 +385,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
   estHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  estLabel: { fontSize: 13, fontWeight: '800', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  estLabel: { fontSize: 13, fontWeight: '800', color: colors.text, textTransform: 'uppercase', letterSpacing: 0.5 },
   estDivider: { height: 1, backgroundColor: colors.border, marginTop: spacing.md, marginBottom: spacing.md },
   estRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   estLabelSmall: { fontSize: 13, fontWeight: '700', color: colors.text },
-  estKg: { fontSize: 16, fontWeight: '900', color: colors.primary },
+  estKg: { fontSize: 16, fontWeight: '900', color: colors.text },
   estTotalRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginTop: spacing.md, backgroundColor: colors.card, borderRadius: radius.sm,
@@ -400,3 +429,4 @@ const styles = StyleSheet.create({
   bookRemaining: { fontSize: 13, color: colors.green, fontWeight: '700', marginTop: 6 },
   bookActions: { flexDirection: 'row', marginTop: spacing.xl, width: '100%' },
 });
+;

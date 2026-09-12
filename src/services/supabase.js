@@ -160,13 +160,27 @@ export async function getRatings(targetId) {
 }
 
 // Ajoute une note (1-5) pour une cible et recalcule la moyenne.
-export async function rateTarget(targetId, score) {
+// Un même utilisateur ne peut noter une cible qu'UNE SEULE FOIS (la seconde
+// tentative est refusée et la moyenne reste inchangée).
+export async function rateTarget(targetId, score, by) {
   const ratings = await localStore.get(KEY_RATINGS, {});
   const list = ratings[targetId] || [];
-  list.push({ score: Number(score), at: Date.now() });
+  if (by && list.some((r) => r.by === by)) {
+    const res = await getRatings(targetId);
+    return { ...res, already: true };
+  }
+  list.push({ score: Number(score), at: Date.now(), ...(by ? { by } : {}) });
   ratings[targetId] = list;
   await localStore.set(KEY_RATINGS, ratings);
   return getRatings(targetId);
+}
+
+// Note déjà donnée par un utilisateur à une cible (null = pas encore noté).
+export async function hasRatedTarget(targetId, by) {
+  if (!by) return null;
+  const ratings = await localStore.get(KEY_RATINGS, {});
+  const entry = (ratings[targetId] || []).find((r) => r.by === by);
+  return entry ? entry.score : null;
 }
 
 // ---------- Annonces ----------

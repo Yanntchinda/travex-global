@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Path } from 'react-native-svg';
 import { colors, spacing } from '../theme/theme';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -22,8 +21,7 @@ const LABEL_KEY = {
 };
 
 // Barre de navigation "floating indicator" :
-//  - un indicateur circulaire en dégradé qui GLISSE entre les onglets,
-//  - une encoche (cutout) courbe dans la barre,
+//  - un indicateur circulaire bleu qui GLISSE entre les onglets,
 //  - l'icône de l'onglet actif apparaît DANS l'indicateur,
 //  - chaque icône reste alignée verticalement au-dessus de son libellé.
 export default function FloatingTabBar({ state, descriptors, navigation }) {
@@ -83,19 +81,6 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
       onLayout={(e) => setFrameWidth(e.nativeEvent.layout.width)}
     >
       <View style={styles.container}>
-        {/* Encoche courbe (cutout) — suit l'indicateur */}
-        <Animated.View
-          style={[
-            styles.cutout,
-            { width: indicatorSize, transform: [{ translateX: Animated.add(translateX, new Animated.Value(baseOffset)) }] },
-          ]}
-          pointerEvents="none"
-        >
-          <Svg width={indicatorSize} height={28} viewBox="0 0 72 28">
-            <Path d="M0,0 C14,0 18,25 36,25 C54,25 58,0 72,0 L72,28 L0,28 Z" fill={colors.bg} />
-          </Svg>
-        </Animated.View>
-
         {/* Indicateur flottant (cercle dégradé) */}
         <Animated.View
           style={[
@@ -174,5 +159,4 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.primary,
   },
-  cutout: { position: 'absolute', top: -9, left: 0, zIndex: 5, height: 28 },
 });
