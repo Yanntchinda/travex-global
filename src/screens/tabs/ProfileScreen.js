@@ -8,7 +8,7 @@ import { Stars } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
-import {updateUser, getRatings, fetchUserAnnouncements } from '../../services/supabase';
+import {updateUser, getRatings, fetchMyAnnouncements } from '../../services/supabase';
 import { APP } from '../../config';
 import AppModal from '../../components/AppModal';
 
@@ -42,7 +42,8 @@ export default function ProfileScreen({ navigation }) {
   const loadCounts = useCallback(async () => {
     try {
       if (!user?.email) { setLiveCounts({ voyages: 0, demandes: 0 }); return; }
-      const list = await fetchUserAnnouncements(user.email);
+      // Annonces du compte + demandes publiées en invité depuis cet appareil.
+      const list = await fetchMyAnnouncements();
       setLiveCounts({
         voyages: list.filter((a) => !a.isDemande).length,
         demandes: list.filter((a) => a.isDemande).length,
@@ -56,6 +57,8 @@ export default function ProfileScreen({ navigation }) {
   }, [navigation, loadCounts]);
 
   const MENU = [
+    // Changer de statut : demandeur → voyageur (références + CNI à vérifier).
+    ...(user?.role !== 'admin' ? [{ icon: 'swap-horizontal-outline', label: t('profile.changeStatus'), screen: 'ChangeStatus' }] : []),
     { icon: 'person-outline', label: t('profile.personal'), screen: 'PersonalInfo' },
     { icon: 'wallet-outline', label: t('profile.payment'), screen: 'Payment' },
     { icon: 'notifications-outline', label: t('profile.notif'), screen: 'NotificationSettings' },
@@ -146,6 +149,22 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.meta}>{[user?.location, user?.phone].filter(Boolean).join(' · ')}</Text>
         ) : null}
 
+        {/* Badge du type de compte : voyageur (vérifié / en attente) ou demandeur */}
+        {user?.role !== 'admin' && (
+          <View style={styles.typeChip}>
+            <Ionicons
+              name={user?.accountType === 'voyageur' ? 'airplane' : 'cube-outline'}
+              size={12}
+              color={colors.white}
+            />
+            <Text style={styles.typeChipText}>
+              {user?.accountType === 'voyageur'
+                ? (user?.verified ? t('account.travelerVerified') : t('account.travelerPending'))
+                : t('account.senderNoId')}
+            </Text>
+          </View>
+        )}
+
         <View style={styles.stats}>
           <View style={styles.stat}>
             <Text style={styles.statNum}>{stats.voyages}</Text>
@@ -164,18 +183,49 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Bandeau vérification */}
-      <View style={styles.banner}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <Ionicons name="warning-outline" size={22} color="#B7791F" />
-          <Text style={styles.bannerText}>
-            {user?.verificationPending ? t('profile.banner.todo') : user?.verified ? t('profile.banner.done') : t('profile.banner.none')}
-          </Text>
+      {/* Bandeau de statut (type de compte / vérification) */}
+      {user?.role === 'admin' ? (
+        <View style={[styles.banner, styles.bannerGreen]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Ionicons name="shield-checkmark-outline" size={22} color="#047857" />
+            <Text style={[styles.bannerText, { color: '#047857' }]}>{t('profile.adminCon')}</Text>
+          </View>
         </View>
-        <TouchableOpacity style={styles.verifyBtn} onPress={() => Alert.alert(t('profile.settings'), t('profile.banner.todo'))}>
-          <Text style={styles.verifyText}>{t('profile.verify')}</Text>
-        </TouchableOpacity>
-      </View>
+      ) : user?.accountType === 'voyageur' ? (
+        user?.verified ? (
+          <View style={[styles.banner, styles.bannerGreen]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Ionicons name="checkmark-circle-outline" size={22} color="#047857" />
+              <Text style={[styles.bannerText, { color: '#047857' }]}>{t('profile.banner.done')}</Text>
+            </View>
+            <TouchableOpacity style={styles.verifyBtn} onPress={() => navigation.navigate('ChangeStatus')}>
+              <Text style={styles.verifyText}>{t('publish.gateButtonView')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.banner}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Ionicons name="hourglass-outline" size={22} color="#B7791F" />
+              <Text style={styles.bannerText}>{t('profile.banner.pending')}</Text>
+            </View>
+            <TouchableOpacity style={styles.verifyBtn} onPress={() => navigation.navigate('ChangeStatus')}>
+              <Text style={styles.verifyText}>{t('profile.banner.pendingBtn')}</Text>
+            </TouchableOpacity>
+          </View>
+        )
+      ) : (
+        /* Demandeur : aucune identification requise ; passage voyageur via
+           « Changer de statut » (références + CNI) pour publier des départs. */
+        <View style={[styles.banner, styles.bannerBlue]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Ionicons name="cube-outline" size={22} color="#1D4ED8" />
+            <Text style={[styles.bannerText, { color: '#1D4ED8' }]}>{t('profile.banner.sender')}</Text>
+          </View>
+          <TouchableOpacity style={styles.verifyBtn} onPress={() => navigation.navigate('ChangeStatus')}>
+            <Text style={styles.verifyText}>{t('profile.banner.senderBtn')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Menu */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.menu}>
@@ -261,6 +311,15 @@ const styles = StyleSheet.create({
     marginHorizontal: '5%', marginTop: -16, borderRadius: radius.md, padding: spacing.md,
     borderWidth: 1, borderColor: '#F0DFB2', zIndex: 2, ...shadow.card,
   },
+  bannerGreen: { backgroundColor: '#ECFDF5', borderColor: '#BFE8D2' },
+  bannerBlue: { backgroundColor: '#EFF4FF', borderColor: '#C7D6FE' },
+  // Badge du type de compte (sous le nom, dans l'en-tête bleu)
+  typeChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)',
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, marginTop: 8,
+  },
+  typeChipText: { color: colors.white, fontSize: 12, fontWeight: '800' },
   bannerText: { color: '#8A5B12', fontWeight: '600', fontSize: 14, marginLeft: 8 },
   verifyBtn: { backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: 8, borderRadius: 20 },
   verifyText: { color: colors.white, fontWeight: '700', fontSize: 13 },

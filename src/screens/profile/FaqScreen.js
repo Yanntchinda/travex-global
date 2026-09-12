@@ -8,7 +8,7 @@ import { useLanguage } from '../../context/LanguageContext';
 
 export default function FaqScreen({ navigation }) {
   const { t } = useLanguage();
-  const items = [1, 2, 3, 4, 5, 6].map((i) => ({ q: t('faq.q' + i), a: t('faq.a' + i) }));
+  const items = [1, 2, 3, 4, 5, 6, 7].map((i) => ({ q: t('faq.q' + i), a: t('faq.a' + i) }));
   const [open, setOpen] = useState(0);
 
   return (

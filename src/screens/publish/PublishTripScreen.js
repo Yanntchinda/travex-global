@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CATEGORIES } from '../../i18n/translations';
 import Gate from '../../components/Gate';
-import { createTrip } from '../../services/supabase';
+import { createTrip, getGuestId } from '../../services/supabase';
 import AppModal from '../../components/AppModal';
 
 export default function PublishTripScreen({ route, navigation }) {
@@ -35,22 +35,63 @@ export default function PublishTripScreen({ route, navigation }) {
   const [urgency, setUrgency] = useState('flexible');
   const [category, setCategory] = useState('');
   const [parcelImage, setParcelImage] = useState(null);
+  // Demande publiée SANS COMPTE (invité) : coordonnées pour être contacté.
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
 
   // Erreur visible + confirmation in-app (fiable sur web ET mobile).
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Modèle transparence : il faut un compte pour publier.
-  if (!user) {
+  // ---------- Règles de publication ----------
+  // DÉPART : réservé aux comptes VOYAGEURS **VÉRIFIÉS** (références + CNI
+  // validées par un administrateur). Un compte non vérifié ne peut publier
+  // AUCUN départ. DEMANDE : ouverte à tous, même sans compte et sans
+  // identification (le demandeur laisse juste ses coordonnées).
+  const isTravelerAccount = !!user && (user.accountType === 'voyageur' || user.role === 'admin');
+
+  if (isVoyage && !user) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScreenHeader title={isVoyage ? t('publish.departureTitle') : t('publish.requestTitle')} onBack={() => navigation.goBack()} />
+        <ScreenHeader title={t('publish.departureTitle')} onBack={() => navigation.goBack()} />
         <Gate
-          icon="megaphone-outline"
-          title={t('announce.gate')}
-          subtitle={t('announce.gateDesc')}
-          onLogin={() => navigation.navigate('SignIn')}
+          icon="airplane-outline"
+          title={t('publish.gateNoAccount')}
+          subtitle={t('publish.gateNoAccountDesc')}
+          buttonTitle={t('publish.gateButtonTraveler')}
+          onLogin={() => navigation.navigate('SignIn', { tab: 'signup', type: 'voyageur' })}
+          hint={t('publish.gateHintDemand')}
+        />
+      </SafeAreaView>
+    );
+  }
+  if (isVoyage && user && !isTravelerAccount) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScreenHeader title={t('publish.departureTitle')} onBack={() => navigation.goBack()} />
+        <Gate
+          icon="swap-horizontal-outline"
+          title={t('publish.gateNotTraveler')}
+          subtitle={t('publish.gateNotTravelerDesc')}
+          buttonTitle={t('publish.gateButtonStatus')}
+          onLogin={() => navigation.navigate('ChangeStatus')}
+          hint={t('publish.gateHintStillDemand')}
+        />
+      </SafeAreaView>
+    );
+  }
+  if (isVoyage && user && isTravelerAccount && !user.verified) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScreenHeader title={t('publish.departureTitle')} onBack={() => navigation.goBack()} />
+        <Gate
+          icon="hourglass-outline"
+          title={t('publish.gateUnverified')}
+          subtitle={t('publish.gateUnverifiedDesc')}
+          buttonTitle={t('publish.gateButtonView')}
+          onLogin={() => navigation.navigate('ChangeStatus')}
+          hint={t('publish.gateHintStillDemand')}
         />
       </SafeAreaView>
     );
@@ -88,7 +129,14 @@ export default function PublishTripScreen({ route, navigation }) {
       setError(t('publish.categoriesRequired'));
       return;
     }
-    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || (user.name || '');
+    // Demande publiée SANS compte : coordonnées obligatoires pour être contacté.
+    if (!isVoyage && !user && (!guestName.trim() || !guestPhone.trim())) {
+      setError(t('publish.guestRequired'));
+      return;
+    }
+    const fullName = user
+      ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || (user.name || '')
+      : guestName.trim();
     const initials = fullName
       .split(/[\s.]+/)
       .filter(Boolean)
@@ -98,6 +146,8 @@ export default function PublishTripScreen({ route, navigation }) {
       .toUpperCase() || 'TR';
     const fromDate = dateNeeded;
     const arrivalDate = toDate.trim() || fromDate; // arrivée = date de départ si non renseignée
+    // Invité : identifiant local stable pour retrouver ses demandes (onglet Annonces).
+    const guestId = user ? null : await getGuestId();
     const ann = {
       from: from.trim(),
       to: to.trim(),
@@ -125,12 +175,16 @@ export default function PublishTripScreen({ route, navigation }) {
       budgetPerKg: isVoyage ? 0 : Number(price) || 0,
       parcelImage: isVoyage ? null : parcelImage,
       capacity: Number(weight) || 0,
-      userEmail: user.email,
+      userEmail: user ? user.email : null,
       userName: fullName,
+      // Publication sans compte : marquée « invité » (aucune identification).
+      guestId,
+      guestPhone: user ? null : guestPhone.trim(),
+      senderPhone: user ? (user.phone || '') : guestPhone.trim(),
       traveler: {
         name: fullName || 'Voyageur',
         initials,
-        verified: !!user.verified,
+        verified: !!user?.verified,
         rating: 0,
         reviews: 0,
       },
@@ -140,7 +194,7 @@ export default function PublishTripScreen({ route, navigation }) {
       await createTrip(ann);
       const msg = isVoyage
         ? `Votre départ ${from} → ${to} (${transport}) du ${fromDate} est en attente de vérification. Un administrateur doit le valider depuis son tableau de bord.`
-        : `Votre demande ${from} → ${to} à réceptionner avant le ${deadline.trim() || date.trim()} est publiée et en attente de vérification par un administrateur.`;
+        : `Votre demande ${from} → ${to} à réceptionner avant le ${deadline.trim() || date.trim()} est publiée et en attente de vérification par un administrateur.${user ? '' : ` Les voyageurs vous contacteront au ${guestPhone.trim()}.`}`;
       setSuccess({ title: t('publish.ready'), msg });
     } catch (e) {
       setError(e.message);
@@ -154,13 +208,40 @@ export default function PublishTripScreen({ route, navigation }) {
       <ScreenHeader title={isVoyage ? t('publish.departureTitle') : t('publish.requestTitle')} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={[styles.typeBox, isVoyage ? { backgroundColor: colors.primaryLight } : { backgroundColor: colors.accentLight }]}>
-          <Text style={styles.typeBadge}>{isVoyage ? 'VOYAGEUR' : 'CLIENT'}</Text>
+          <Text style={styles.typeBadge}>{isVoyage ? 'VOYAGEUR' : (user ? 'DEMANDEUR' : 'DEMANDEUR — SANS COMPTE')}</Text>
           <Text style={styles.typeText}>
             {isVoyage
               ? 'Vous voyagez et pouvez transporter des colis / documents.'
               : 'Vous cherchez un transporteur pour expédier vos colis / documents.'}
           </Text>
         </View>
+
+        {/* Demande publiée SANS compte : le demandeur n'a pas besoin de
+            s'identifier, il laisse juste de quoi le contacter. */}
+        {!isVoyage && !user && (
+          <View style={styles.guestBox}>
+            <View style={styles.guestTitleRow}>
+              <Ionicons name="person-circle-outline" size={18} color={colors.accent} />
+              <Text style={styles.guestTitle}>{t('publish.guestSection')}</Text>
+            </View>
+            <Text style={styles.guestDesc}>{t('publish.guestSectionDesc')}</Text>
+            <Input
+              label={t('publish.guestName')}
+              icon="person-outline"
+              placeholder={t('publish.guestNamePh')}
+              value={guestName}
+              onChangeText={setGuestName}
+            />
+            <Input
+              label={t('publish.guestPhone')}
+              icon="call-outline"
+              placeholder={t('publish.guestPhonePh')}
+              value={guestPhone}
+              onChangeText={setGuestPhone}
+              keyboardType="phone-pad"
+            />
+          </View>
+        )}
 
         {/* Saisie libre des villes */}
         <Input label={t('publish.from')} icon="location-outline" placeholder={t('publish.enterCity')} value={from} onChangeText={setFrom} />
@@ -342,6 +423,14 @@ const styles = StyleSheet.create({
   typeBox: { borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg },
   typeBadge: { fontSize: 12, fontWeight: '800', color: colors.primary, letterSpacing: 1, marginBottom: 4 },
   typeText: { fontSize: 14, color: colors.text, lineHeight: 20 },
+  // Coordonnées invité (demande sans compte)
+  guestBox: {
+    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md,
+    marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border,
+  },
+  guestTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  guestTitle: { fontSize: 14, fontWeight: '800', color: colors.primaryDark },
+  guestDesc: { fontSize: 12.5, color: colors.muted, lineHeight: 18, marginTop: 4, marginBottom: spacing.sm },
   label: { fontSize: 14, color: colors.text, fontWeight: '600', marginBottom: spacing.sm, marginTop: spacing.sm },
   hint: { fontSize: 12, color: colors.muted, marginBottom: spacing.sm },
   transportRow: { flexDirection: 'row', marginBottom: spacing.lg },

@@ -6,7 +6,7 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { EmptyState, Badge } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { fetchUserAnnouncements, setAnnouncementHidden } from '../../services/supabase';
+import { fetchMyAnnouncements, setAnnouncementHidden } from '../../services/supabase';
 
 export default function AnnoncesScreen({ navigation }) {
   const { user } = useAuth();
@@ -14,10 +14,12 @@ export default function AnnoncesScreen({ navigation }) {
   const [tab, setTab] = useState('attente');
   const [items, setItems] = useState([]);
 
+  // Mes annonces : celles du compte connecté + les demandes publiées en
+  // INVITÉ depuis cet appareil (un demandeur n'a pas besoin de compte).
   const load = useCallback(async () => {
-    const list = await fetchUserAnnouncements(user?.email);
+    const list = await fetchMyAnnouncements();
     setItems(list);
-  }, [user?.email]);
+  }, []);
 
   // Masque / réaffiche une annonce — action réservée au propriétaire (ici).
   const toggleHidden = async (a) => {
@@ -27,17 +29,50 @@ export default function AnnoncesScreen({ navigation }) {
 
   // Recharge à chaque retour sur l'onglet : la publication apparaît immédiatement.
   useEffect(() => {
-    if (!user) return;
     load();
     const unsub = navigation.addListener('focus', () => load());
     return unsub;
-  }, [load, user, navigation]);
+  }, [load, navigation]);
 
   if (!user) {
+    // Invité : ses demandes d'expédition publiées sans compte restent visibles ici.
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Text style={styles.title}>{t('lists.mine')}</Text>
-        <EmptyState icon="list-outline" title={t('lists.empty')} subtitle={t('lists.emptyDesc')} />
+        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          <View style={styles.guestBanner}>
+            <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
+            <Text style={styles.guestBannerText}>{t('lists.guestHint')}</Text>
+          </View>
+          {items.length === 0 ? (
+            <EmptyState icon="list-outline" title={t('lists.empty')} subtitle={t('lists.emptyDesc')} />
+          ) : (
+            items.map((a) => (
+              <View key={a.id} style={[styles.card, a.hidden && styles.cardHidden]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={styles.iconBox}><Ionicons name="trending-up" size={20} color={colors.accent} /></View>
+                  <View style={{ flex: 1, marginLeft: spacing.md }}>
+                    <Text style={styles.route}>{a.from} → {a.to}</Text>
+                    <Text style={styles.meta}>{a.title || a.date}</Text>
+                  </View>
+                </View>
+                <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <Badge
+                    label={a.status === 'attente' ? t('publish.pending') : t('publish.verified')}
+                    color={a.status === 'attente' ? '#FCF3DF' : '#ECFDF5'}
+                    textColor={a.status === 'attente' ? '#8A5B12' : '#047857'}
+                    icon={a.status === 'attente' ? 'time' : 'checkmark-circle'}
+                  />
+                  <Badge label={t('publish.guestBadge')} color="#EEF1F5" textColor={colors.muted} icon="person-circle-outline" />
+                </View>
+              </View>
+            ))
+          )}
+          <TouchableOpacity style={styles.guestBtn} onPress={() => navigation.navigate('SignIn')}>
+            <Ionicons name="person-add-outline" size={16} color={colors.primary} />
+            <Text style={styles.guestBtnText}>{t('lists.guestBtn')}</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -125,4 +160,17 @@ const styles = StyleSheet.create({
   hideBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 12, backgroundColor: colors.inputBg },
   hideText: { fontSize: 12, fontWeight: '800', color: colors.muted },
   hiddenDesc: { fontSize: 12, color: colors.muted, marginTop: spacing.sm, fontStyle: 'italic' },
+  // Bandeau invité (demandes publiées sans compte)
+  guestBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
+  },
+  guestBannerText: { flex: 1, fontSize: 12.5, color: colors.text, lineHeight: 18 },
+  guestBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md,
+    borderWidth: 1.5, borderColor: colors.primary, marginTop: spacing.sm, marginBottom: spacing.lg,
+  },
+  guestBtnText: { color: colors.primary, fontWeight: '800', fontSize: 14 },
 });

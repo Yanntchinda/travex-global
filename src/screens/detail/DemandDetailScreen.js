@@ -222,6 +222,17 @@ export default function DemandDetailScreen({ route, navigation }) {
                 <Text style={styles.senderRating}>{Number(detail.sender.rating || 0).toFixed(1)}</Text>
                 <Text style={styles.senderDeals}> ({Number(detail.sender.dealsCount || 0)} {t('demand.deals')})</Text>
               </View>
+              {/* Demande publiée SANS compte : coordonnées laissées par l'invité */}
+              {!!detail.guestPhone && (
+                <View style={styles.guestContactRow}>
+                  <Ionicons name="call-outline" size={13} color="#047857" />
+                  <Text style={styles.guestContact}>{detail.guestPhone}</Text>
+                  <View style={styles.guestChip}>
+                    <Ionicons name="person-circle-outline" size={11} color={colors.muted} />
+                    <Text style={styles.guestChipText}>{t('publish.guestBadge')}</Text>
+                  </View>
+                </View>
+              )}
             </View>
             {detail.sender.verified && (
               <View style={styles.verifiedChip}>
@@ -289,6 +300,14 @@ const styles = StyleSheet.create({
   senderName: { fontSize: 15, fontWeight: '800', color: colors.text, flexDirection: 'row', alignItems: 'center' },
   senderRating: { color: '#F5A623', fontWeight: '800', fontSize: 13, marginLeft: 4 },
   senderDeals: { color: colors.muted, fontSize: 12, fontWeight: '600' },
+  // Coordonnées d'un expéditeur invité (demande publiée sans compte)
+  guestContactRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
+  guestContact: { color: '#047857', fontSize: 13, fontWeight: '800' },
+  guestChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.inputBg, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3,
+  },
+  guestChipText: { color: colors.muted, fontSize: 10.5, fontWeight: '800' },
   verifiedChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
   verifiedChipText: { color: '#059669', fontSize: 11, fontWeight: '800' },
   actionBar: {

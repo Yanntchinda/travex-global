@@ -107,6 +107,25 @@ Relancez l'app : l'authentification et les annonces passent en mode réel. *(Le 
 
 ---
 
+## 👥 Types de comptes & règles de publication
+
+À l'inscription, l'utilisateur **choisit obligatoirement** son profil :
+
+| | ✈️ **Voyageur** (« Je suis un voyageur ») | 📦 **Demandeur** (« Je souhaite faire expédier un colis ») |
+|---|---|---|
+| Compte | **Obligatoire** pour publier un départ | **Aucun compte requis** pour publier une demande |
+| Identification | **Références + CNI obligatoires** (photo recto + selfie avec CNI) | **Aucune pièce d'identité** demandée |
+| Peut publier | Départs (trajets) **et** demandes | **Uniquement des demandes d'expédition** (annonces) |
+| Vérification | Compte **vérifié par un administrateur** avant de pouvoir publier le moindre départ | Non applicable |
+
+Règles appliquées dans l'app :
+
+- **Sans compte** (invité) : on peut parcourir les annonces et publier des **demandes d'expédition** en laissant simplement nom + téléphone (elles apparaissent dans l'onglet *Annonces* de l'appareil).
+- **Compte voyageur non vérifié** : il ne peut publier **aucun départ** tant qu'un administrateur n'a pas validé ses références + CNI (les demandes restent possibles).
+- **Changer de statut** (espace Profil) : un demandeur qui souhaite publier des départs y saisit ses références et sa CNI ; son compte passe en « voyageur — vérification en cours » jusqu'à validation par l'administration.
+
+---
+
 ## 🧭 Écrans inclus
 
 - **Connexion** / **Finalisation d'inscription Google**
@@ -115,7 +134,7 @@ Relancez l'app : l'authentification et les annonces passent en mode réel. *(Le 
 - **Publier une annonce** : ville de départ/arrivée, date, transport, tarif, capacité.
 - **Réservations** (clients / mes), **Mes annonces** (voyages / demandes), **Messages**.
 - **Profil** : en-tête bleu, stats, vérification compte, menu complet.
-- **Sous-écrans profil** : infos personnelles, gestion des paiements, notifications, sécurité (2FA), langue (FR/EN), évaluations, support.
+- **Sous-écrans profil** : infos personnelles, **changer de statut** (demandeur → voyageur), gestion des paiements, notifications, sécurité (2FA), langue (FR/EN), évaluations, support.
 
 ---
 

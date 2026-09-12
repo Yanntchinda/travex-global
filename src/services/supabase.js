@@ -15,6 +15,7 @@ if (CLOUD_ENABLED) {
 const KEY_SESSION = 'travex.session';
 const KEY_USER = 'travex.user';
 const KEY_USERS = 'travex.users'; // profils enregistrés (à vérifier côté admin)
+const KEY_GUEST = 'travex.guestId'; // identifiant invité stable (demandes publiées sans compte)
 const KEY_ANNOUNCE = 'travex.annonces'; // annonces publiées (attente / validées / rejetées)
 const KEY_RESERVATIONS = 'travex.reservations'; // liste de réservations (kg, total, statut)
 const KEY_RATINGS = 'travex.ratings'; // { targetId: [{score, at}] }
@@ -39,7 +40,13 @@ export const localStore = {
   async remove(key) { try { await AsyncStorage.removeItem(key); } catch {} },
 };
 
+// Deux types de comptes :
+//  - 'voyageur'  : publie des DÉPARTS. Références + CNI obligatoires, le compte
+//                  doit être VÉRIFIÉ par un administrateur avant toute publication.
+//  - 'demandeur' : publie des DEMANDES d'expédition (annonces). Aucune
+//                  identification requise — il peut même publier sans compte.
 function buildUser(p) {
+  const accountType = p.accountType === 'demandeur' ? 'demandeur' : 'voyageur';
   return {
     id: (p.email || 'u_') + '_' + Date.now(),
     firstName: p.firstName || '',
@@ -50,21 +57,30 @@ function buildUser(p) {
     avatar: p.avatar || null,
     cniPhoto: p.cniPhoto || null,
     cniSelfie: p.cniSelfie || null,
+    accountType,
     initials: ((p.firstName || 'X')[0] + (p.lastName || 'X')[0]).toUpperCase(),
     verified: false,
-    verificationPending: true,
+    // Seul un VOYAGEUR passe par la vérification d'identité (CNI).
+    verificationPending: accountType === 'voyageur',
     role: 'user',
     stats: { voyages: 0, demandes: 0, note: 0 },
   };
 }
 
-// ---------- Inscription complète (références + CNI + avatar) ----------
+// ---------- Inscription (choix du type de compte) ----------
+// 'voyageur'  : références + CNI OBLIGATOIRES → compte en attente de vérification.
+// 'demandeur' : aucune pièce d'identité requise (publication de demandes libre).
 // Stocke aussi le profil dans la liste des profils à vérifier (côté admin).
 export async function registerUser(d) {
   if (!d.email || !d.password) throw new Error('E-mail et mot de passe requis.');
+  const accountType = d.accountType === 'demandeur' ? 'demandeur' : 'voyageur';
+  if (accountType === 'voyageur' && (!d.cniPhoto || !d.cniSelfie)) {
+    throw new Error('Vérification d\u2019identité requise : ajoutez la photo de votre CNI et le selfie avec votre CNI.');
+  }
   const base = buildUser({
     firstName: d.firstName, lastName: d.lastName, email: d.email,
     phone: d.phone, location: d.location, cniPhoto: d.cniPhoto, cniSelfie: d.cniSelfie, avatar: d.avatar,
+    accountType,
   });
   const users = await localStore.get(KEY_USERS, []);
   users.push(base);
@@ -82,29 +98,30 @@ export async function signIn({ email, password }) {
   if (email.toLowerCase() === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
     const admin = {
       id: 'admin_1', firstName: 'Admin', lastName: 'TRAVEX', email, initials: 'AT',
-      avatar: null, verified: true, verificationPending: false, role: 'admin',
+      avatar: null, verified: true, verificationPending: false, role: 'admin', accountType: 'admin',
       stats: { voyages: 0, demandes: 0, note: 0 },
     };
     await localStore.set(KEY_USER, admin);
     await localStore.set(KEY_SESSION, 'active');
     return { user: admin };
   }
-  // Compte vérifié (démo)
+  // Compte vérifié (démo) — voyageur validé par l'administration.
   if (email.toLowerCase() === VERIFIED_CREDENTIALS.email && password === VERIFIED_CREDENTIALS.password) {
     const u = {
       id: 'verified_1', firstName: 'Jean', lastName: 'Dupont (vérifié)', email, initials: 'JD',
-      avatar: null, verified: true, verificationPending: false, role: 'user',
+      avatar: null, verified: true, verificationPending: false, role: 'user', accountType: 'voyageur',
       stats: { voyages: 1, demandes: 0, note: 5 },
     };
     await localStore.set(KEY_USER, u);
     await localStore.set(KEY_SESSION, 'active');
     return { user: u };
   }
-  // Compte créé manuellement (registre)
+  // Compte créé manuellement (registre) — on conserve son type de compte
+  // (voyageur / demandeur) ; par défaut, les anciens comptes sont des voyageurs.
   const users = await localStore.get(KEY_USERS, []);
   const found = users.find((u) => u.email === email);
   if (found) {
-    const user = found;
+    const user = { accountType: 'voyageur', ...found };
     await localStore.set(KEY_USER, user);
     await localStore.set(KEY_SESSION, 'active');
     return { user };
@@ -115,7 +132,10 @@ export async function signIn({ email, password }) {
 export async function getSessionUser() {
   const session = await localStore.get(KEY_SESSION);
   if (!session) return null;
-  return await localStore.get(KEY_USER);
+  const u = await localStore.get(KEY_USER);
+  if (!u) return null;
+  // Normalise le type de compte (les anciennes sessions n'en avaient pas).
+  return { accountType: u.role === 'admin' ? 'admin' : 'voyageur', ...u };
 }
 
 export async function signOut() {
@@ -129,6 +149,73 @@ export async function updateUser(patch) {
   const cur = (await localStore.get(KEY_USER)) || {};
   const next = { ...cur, ...patch };
   await localStore.set(KEY_USER, next);
+  return next;
+}
+
+// ---------- Invités (demandeurs sans compte) ----------
+// Un demandeur n'a PAS BESOIN de compte pour publier une demande d'expédition.
+// On attribue un identifiant invité stable à l'appareil pour retrouver ses
+// publications dans l'onglet « Annonces » sans création de compte.
+export async function getGuestId() {
+  let id = await localStore.get(KEY_GUEST, null);
+  if (!id) {
+    id = 'guest_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    await localStore.set(KEY_GUEST, id);
+  }
+  return id;
+}
+
+// Annonces de l'utilisateur courant : celles de son compte (e-mail) + celles
+// publiées en invité depuis cet appareil (demandes sans compte).
+export async function fetchMyAnnouncements() {
+  const published = await localStore.get(KEY_ANNOUNCE, []);
+  const me = await localStore.get(KEY_USER);
+  const guestId = await localStore.get(KEY_GUEST, null);
+  return published.filter((a) =>
+    (me && me.email && a.userEmail === me.email) || (guestId && a.guestId === guestId)
+  );
+}
+
+// ---------- Changer de statut : demandeur → voyageur ----------
+// Le demandeur fournit ses références + sa CNI ; son compte passe en
+// « voyageur » EN ATTENTE DE VÉRIFICATION. Tant qu'un administrateur ne l'a
+// pas vérifié, il ne peut publier AUCUN départ (les demandes restent libres).
+export async function requestTravelerUpgrade(d) {
+  const cur = (await localStore.get(KEY_USER)) || {};
+  if (!cur || !cur.email) throw new Error('Connectez-vous pour changer de statut.');
+  if (!d.firstName || !d.lastName) throw new Error('Renseignez votre prénom et votre nom.');
+  if (!d.cniPhoto || !d.cniSelfie) {
+    throw new Error('Ajoutez la photo de votre CNI et le selfie avec votre CNI.');
+  }
+  const next = {
+    ...cur,
+    firstName: d.firstName,
+    lastName: d.lastName,
+    phone: d.phone || cur.phone || '',
+    location: d.location || cur.location || '',
+    accountType: 'voyageur',
+    cniPhoto: d.cniPhoto,
+    cniSelfie: d.cniSelfie,
+    verified: false,
+    verificationPending: true,
+  };
+  next.initials = ((next.firstName || 'X')[0] + (next.lastName || 'X')[0]).toUpperCase();
+  await localStore.set(KEY_USER, next);
+  // Enregistre / met à jour le profil dans la liste à vérifier (côté admin).
+  const users = await localStore.get(KEY_USERS, []);
+  const idx = users.findIndex((u) => u.email === next.email);
+  if (idx >= 0) users[idx] = { ...users[idx], ...next };
+  else users.push(next);
+  await localStore.set(KEY_USERS, users);
+  // Notifie l'utilisateur que sa demande est en cours d'examen.
+  await addNotification({
+    type: 'info',
+    icon: 'shield-checkmark-outline',
+    title_fr: 'Changement de statut demandé',
+    title_en: 'Status change requested',
+    body_fr: 'Votre demande pour devenir voyageur est enregistrée. Un administrateur doit vérifier votre CNI avant que vous puissiez publier des départs.',
+    body_en: 'Your request to become a traveler is recorded. An admin must verify your ID before you can publish departures.',
+  });
   return next;
 }
 
@@ -446,14 +533,14 @@ export async function fetchPendingUsers() {
       {
         id: 'pending_1', firstName: 'Awa', lastName: 'Nkomo', email: 'awa@example.com',
         phone: '+237 6 77 00 00 00', location: 'Yaoundé', verified: false, verificationPending: true,
-        initials: 'AN', role: 'user',
+        accountType: 'voyageur', initials: 'AN', role: 'user',
         cniPhoto: 'https://via.placeholder.com/300x180?text=CNI+Awa',
         cniSelfie: 'https://via.placeholder.com/300x180?text=Awa+CNI',
       },
       {
         id: 'pending_2', firstName: 'Boris', lastName: 'Talla', email: 'boris@example.com',
         phone: '+237 6 99 00 00 00', location: 'Douala', verified: false, verificationPending: true,
-        initials: 'BT', role: 'user',
+        accountType: 'voyageur', initials: 'BT', role: 'user',
         cniPhoto: 'https://via.placeholder.com/300x180?text=CNI+Boris',
         cniSelfie: 'https://via.placeholder.com/300x180?text=Boris+CNI',
       },
@@ -465,8 +552,15 @@ export async function fetchPendingUsers() {
 
 export async function verifyUser(id) {
   const users = await localStore.get(KEY_USERS, []);
+  const target = users.find((u) => u.id === id);
   const next = users.map((u) => (u.id === id ? { ...u, verified: true, verificationPending: false } : u));
   await localStore.set(KEY_USERS, next);
+  // Synchronise la session locale si le compte vérifié est connecté sur cet
+  // appareil (mode démo) : le statut « vérifié » est immédiatement visible.
+  const me = await localStore.get(KEY_USER);
+  if (me && target && (me.id === id || me.email === target.email)) {
+    await localStore.set(KEY_USER, { ...me, verified: true, verificationPending: false });
+  }
   return next;
 }
 

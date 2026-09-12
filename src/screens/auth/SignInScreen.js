@@ -8,6 +8,7 @@ import { signIn, registerUser } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import AppModal from '../../components/AppModal';
+import PhotoPicker from '../../components/PhotoPicker';
 
 // Palette "océan" de la maquette (fond sombre + accents ciel).
 const OCEAN = {
@@ -70,12 +71,15 @@ function CheckRow({ checked, label, onToggle }) {
   );
 }
 
-export default function SignInScreen({ navigation }) {
+export default function SignInScreen({ navigation, route }) {
   const { setUser } = useAuth();
   const { t, lang, chooseLang, setLang } = useLanguage();
 
   // Onglet actif : 'login' | 'signup'
-  const [tab, setTab] = useState('login');
+  // Paramètres de navigation : un écran « verrou » peut demander l'ouverture
+  // directe de l'inscription avec le type de compte présélectionné
+  // (ex : « Créer un compte voyageur » depuis la publication d'un départ).
+  const [tab, setTab] = useState(route.params?.tab === 'signup' ? 'signup' : 'login');
 
   // Connexion
   const [loginEmail, setLoginEmail] = useState('');
@@ -85,6 +89,12 @@ export default function SignInScreen({ navigation }) {
   const [loginBusy, setLoginBusy] = useState(false);
 
   // Inscription
+  // Type de compte choisi à l'inscription : 'voyageur' (publie des départs,
+  // CNI + références obligatoires) ou 'demandeur' (publie des demandes
+  // d'expédition, sans aucune identification).
+  const [signupType, setSignupType] = useState(
+    route.params?.type === 'voyageur' || route.params?.type === 'demandeur' ? route.params.type : null
+  );
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
@@ -93,6 +103,9 @@ export default function SignInScreen({ navigation }) {
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [signupBusy, setSignupBusy] = useState(false);
+  // CNI (compte voyageur uniquement — obligatoires)
+  const [cniPhoto, setCniPhoto] = useState(null);
+  const [cniSelfie, setCniSelfie] = useState(null);
 
   // Contact (visible ensuite dans le profil de l'utilisateur)
   const [signupPhone, setSignupPhone] = useState('');
@@ -143,6 +156,10 @@ export default function SignInScreen({ navigation }) {
   };
 
   const doSignup = async () => {
+    if (!signupType) {
+      showToast(t('account.typeRequired'), true);
+      return;
+    }
     if (!signupName.trim() || !signupEmail.trim() || !signupPassword) {
       showToast(t('signin.fillRequired'), true);
       return;
@@ -155,6 +172,17 @@ export default function SignInScreen({ navigation }) {
       showToast(t('signin.termsRequired'), true);
       return;
     }
+    const isTraveler = signupType === 'voyageur';
+    // Voyageur : références (téléphone) + CNI obligatoires. On ne demande
+    // RIEN à un demandeur : aucune identification requise pour ses demandes.
+    if (isTraveler && !signupPhone.trim()) {
+      showToast(t('account.phoneRequired'), true);
+      return;
+    }
+    if (isTraveler && (!cniPhoto || !cniSelfie)) {
+      showToast(t('account.cniRequired'), true);
+      return;
+    }
     setSignupBusy(true);
     try {
       const parts = signupName.trim().split(/\s+/);
@@ -165,14 +193,15 @@ export default function SignInScreen({ navigation }) {
         lastName,
         email: signupEmail.trim(),
         password: signupPassword,
-        location: '',
-        phone: '',
-        // CNI simulées pour que le profil passe en "en attente de vérification" (visible côté admin).
-        cniPhoto: 'https://via.placeholder.com/300x180?text=CNI',
-        cniSelfie: 'https://via.placeholder.com/300x180?text=Selfie',
+        location: isTraveler ? signupLocation.trim() : '',
+        phone: isTraveler ? signupPhone.trim() : '',
+        accountType: isTraveler ? 'voyageur' : 'demandeur',
+        // CNI exigées pour un compte voyageur ; un demandeur ne s'identifie pas.
+        cniPhoto: isTraveler ? cniPhoto : null,
+        cniSelfie: isTraveler ? cniSelfie : null,
       });
       setUser(user);
-      showToast(t('signin.signupSuccess'), false);
+      showToast(isTraveler ? t('signin.signupSuccessTraveler') : t('signin.signupSuccess'), false);
       setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] }), 700);
     } catch (e) {
       showToast(e.message, true);
@@ -289,6 +318,37 @@ export default function SignInScreen({ navigation }) {
               </>
             ) : (
               <>
+                {/* Choix OBLIGATOIRE du type de compte avant l'inscription */}
+                <Text style={styles.label}>{t('account.typeTitle')}</Text>
+                <TouchableOpacity
+                  style={[styles.typeCard, signupType === 'voyageur' && styles.typeCardActive]}
+                  onPress={() => setSignupType('voyageur')}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.typeIcon}>
+                    <Ionicons name="airplane" size={20} color={signupType === 'voyageur' ? '#FFFFFF' : 'rgba(255,255,255,0.75)'} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={[styles.typeTitle, signupType === 'voyageur' && styles.typeTitleActive]}>{t('account.traveler')}</Text>
+                    <Text style={styles.typeDesc}>{t('account.travelerDesc')}</Text>
+                  </View>
+                  <Ionicons name={signupType === 'voyageur' ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={signupType === 'voyageur' ? '#5C86FF' : 'rgba(255,255,255,0.4)'} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.typeCard, signupType === 'demandeur' && styles.typeCardActive]}
+                  onPress={() => setSignupType('demandeur')}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.typeIcon}>
+                    <Ionicons name="cube-outline" size={20} color={signupType === 'demandeur' ? '#FFFFFF' : 'rgba(255,255,255,0.75)'} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={[styles.typeTitle, signupType === 'demandeur' && styles.typeTitleActive]}>{t('account.sender')}</Text>
+                    <Text style={styles.typeDesc}>{t('account.senderDesc')}</Text>
+                  </View>
+                  <Ionicons name={signupType === 'demandeur' ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={signupType === 'demandeur' ? '#5C86FF' : 'rgba(255,255,255,0.4)'} />
+                </TouchableOpacity>
+
                 <Text style={styles.label}>{t('signin.fullName')}</Text>
                 <Field icon="person-outline" value={signupName} onChangeText={setSignupName} placeholder={t('signin.fullNamePh')} />
 
@@ -301,17 +361,45 @@ export default function SignInScreen({ navigation }) {
                 <Text style={styles.label}>{t('signin.confirmPassword')}</Text>
                 <Field icon="shield-checkmark-outline" value={signupConfirm} onChangeText={setSignupConfirm} placeholder="••••••••" secure rightVisible={showConfirmPwd} rightIcon={showConfirmPwd ? 'eye-off-outline' : 'eye-outline'} onRight={() => setShowConfirmPwd((v) => !v)} />
 
-                {/* Contact — ces informations apparaîtront dans votre profil */}
-                <View style={styles.contactSection}>
-                  <View style={styles.contactTitleRow}>
-                    <Ionicons name="id-card-outline" size={15} color="rgba(255,255,255,0.75)" />
-                    <Text style={styles.contactTitle}>{t('signin.contactSection')}</Text>
-                  </View>
-                  <Text style={styles.label}>{t('signin.phone')}</Text>
-                  <Field icon="call-outline" value={signupPhone} onChangeText={setSignupPhone} placeholder={t('signin.phonePh')} keyboardType="phone-pad" />
-                  <Text style={styles.label}>{t('signin.location')}</Text>
-                  <Field icon="location-outline" value={signupLocation} onChangeText={setSignupLocation} placeholder={t('signin.locationPh')} />
-                </View>
+                {/* Références + CNI : UNIQUEMENT pour un compte VOYAGEUR.
+                    Un demandeur n'a pas besoin de s'identifier. */}
+                {signupType === 'voyageur' && (
+                  <>
+                    <View style={styles.contactSection}>
+                      <View style={styles.contactTitleRow}>
+                        <Ionicons name="id-card-outline" size={15} color="rgba(255,255,255,0.75)" />
+                        <Text style={styles.contactTitle}>{t('signin.contactSection')}</Text>
+                      </View>
+                      <Text style={styles.label}>{t('signin.phone')}</Text>
+                      <Field icon="call-outline" value={signupPhone} onChangeText={setSignupPhone} placeholder={t('signin.phonePh')} keyboardType="phone-pad" />
+                      <Text style={styles.label}>{t('signin.location')}</Text>
+                      <Field icon="location-outline" value={signupLocation} onChangeText={setSignupLocation} placeholder={t('signin.locationPh')} />
+                    </View>
+
+                    {/* Vérification d'identité (CNI) — carte claire pour les pickers */}
+                    <View style={styles.identityCard}>
+                      <View style={styles.identityTitleRow}>
+                        <Ionicons name="shield-checkmark-outline" size={15} color={OCEAN.brand500} />
+                        <Text style={styles.identityTitle}>{t('register.identity')}</Text>
+                      </View>
+                      <Text style={styles.identityHint}>{t('account.travelerDesc')}</Text>
+                      <PhotoPicker
+                        label={t('register.cni')}
+                        value={cniPhoto}
+                        onChange={setCniPhoto}
+                        placeholder="Ajouter la photo de la CNI"
+                        hint="Face recto de votre carte d\u2019identité"
+                      />
+                      <PhotoPicker
+                        label={t('register.cniSelfie')}
+                        value={cniSelfie}
+                        onChange={setCniSelfie}
+                        placeholder="Ajouter la photo avec votre CNI"
+                        hint="Visage + CNI visibles pour la vérification"
+                      />
+                    </View>
+                  </>
+                )}
 
                 <View style={styles.termsRow}>
                   <CheckRow checked={acceptTerms} label={t('signin.terms')} onToggle={() => setAcceptTerms((v) => !v)} />
@@ -459,6 +547,29 @@ const styles = StyleSheet.create({
   contactSection: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.18)' },
   contactTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   contactTitle: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', letterSpacing: 0.3 },
+  // Choix du type de compte (voyageur / demandeur) à l'inscription.
+  typeCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12, padding: 12, marginBottom: 10,
+  },
+  typeCardActive: { borderColor: '#5C86FF', backgroundColor: 'rgba(92,134,255,0.16)' },
+  typeIcon: {
+    width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  typeTitle: { fontSize: 14, fontWeight: '800', color: 'rgba(255,255,255,0.85)' },
+  typeTitleActive: { color: '#FFFFFF' },
+  typeDesc: { fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 2, lineHeight: 16 },
+  // Carte claire « vérification d'identité » (contient les PhotoPicker CNI,
+  // stylés pour un fond clair) posée sur la carte de verre sombre.
+  identityCard: {
+    backgroundColor: '#FFFFFF', borderRadius: 14, padding: 14, marginTop: 14,
+  },
+  identityTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  identityTitle: { color: '#0F172A', fontSize: 13, fontWeight: '800' },
+  identityHint: { color: '#64748B', fontSize: 11.5, lineHeight: 16, marginTop: 4, marginBottom: 10 },
   footerToggle: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 22, gap: 6 },
   footerToggleText: { color: '#CBD5E1', fontSize: 13, fontWeight: '600' },
   footerLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

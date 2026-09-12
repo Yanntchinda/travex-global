@@ -19,12 +19,20 @@ const HERO_SLIDES = [
   { image: require('../../../assets/hero/hero3.jpg') },
 ];
 
-// Feuille de choix publié (départ / demande)
-function PublishChoiceModal({ visible, onClose, onChoose }) {
+// Feuille de choix publié (départ / demande) — affiche aussi les conditions :
+// un départ exige un compte VOYAGEUR VÉRIFIÉ, une demande est ouverte à tous
+// (même sans compte, le demandeur n'a pas besoin de s'identifier).
+function PublishChoiceModal({ visible, onClose, onChoose, user }) {
   const { t } = useLanguage();
+  const isTraveler = !!user && (user.accountType === 'voyageur' || user.role === 'admin');
+  const departureHint = !user
+    ? t('publish.hintTravelerRequired')
+    : isTraveler
+      ? (user.verified ? null : t('publish.hintPending'))
+      : t('publish.hintChangeStatus');
   const options = [
-    { key: 'voyage', icon: 'airplane', title: t('publish.departure'), desc: t('publish.departureDesc'), color: colors.primary },
-    { key: 'demande', icon: 'trending-up', title: t('publish.request'), desc: t('publish.requestDesc'), color: colors.accent },
+    { key: 'voyage', icon: 'airplane', title: t('publish.departure'), desc: t('publish.departureDesc'), color: colors.primary, hint: departureHint },
+    { key: 'demande', icon: 'trending-up', title: t('publish.request'), desc: t('publish.requestDesc'), color: colors.accent, hint: !user ? t('publish.hintNoAccount') : null },
   ];
   return (
     <AppModal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -40,6 +48,12 @@ function PublishChoiceModal({ visible, onClose, onChoose }) {
               <View style={{ flex: 1, marginLeft: spacing.md }}>
                 <Text style={styles.optionTitle}>{o.title}</Text>
                 <Text style={styles.optionDesc}>{o.desc}</Text>
+                {o.hint ? (
+                  <View style={styles.optionHintRow}>
+                    <Ionicons name={o.key === 'voyage' ? 'lock-closed' : 'checkmark-circle'} size={12} color={o.key === 'voyage' ? '#B7791F' : colors.green} />
+                    <Text style={[styles.optionHint, { color: o.key === 'voyage' ? '#B7791F' : colors.green }]}>{o.hint}</Text>
+                  </View>
+                ) : null}
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.muted} />
             </TouchableOpacity>
@@ -246,7 +260,7 @@ export default function HomeScreen({ navigation }) {
         <Ionicons name="add" size={30} color={colors.white} />
       </TouchableOpacity>
 
-      <PublishChoiceModal visible={showPublish} onClose={() => setShowPublish(false)} onChoose={onChoose} />
+      <PublishChoiceModal visible={showPublish} onClose={() => setShowPublish(false)} onChoose={onChoose} user={user} />
     </SafeAreaView>
   );
 }
@@ -328,6 +342,9 @@ const styles = StyleSheet.create({
   optionIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   optionTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   optionDesc: { fontSize: 13, color: colors.muted, marginTop: 4, lineHeight: 19 },
+  // Condition d'accès (compte voyageur vérifié / aucun compte requis)
+  optionHintRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
+  optionHint: { fontSize: 11.5, fontWeight: '800' },
   cancel: { alignItems: 'center', marginTop: spacing.md, padding: spacing.sm },
   cancelText: { color: colors.muted, fontWeight: '600', fontSize: 15 },
 });

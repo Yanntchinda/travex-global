@@ -49,7 +49,9 @@ export default function RegisterScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      const user = await registerUser({ firstName, lastName, location, phone, email, password, cniPhoto, cniSelfie });
+      // Ce formulaire complet (références + CNI) crée un compte VOYAGEUR :
+      // il devra être vérifié par un administrateur avant de publier des départs.
+      const user = await registerUser({ firstName, lastName, location, phone, email, password, cniPhoto, cniSelfie, accountType: 'voyageur' });
       setUser(user);
       // Après inscription réussie : revenir aux onglets principaux (vider la pile de navigation).
       navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
