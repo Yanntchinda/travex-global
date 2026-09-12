@@ -394,6 +394,11 @@ const nav = { goBack() {}, navigate() {}, addListener: () => () => {} };
       assert.strictEqual(byTestId(up, 'cni-' + k).length, 1, 'manque cni-' + k);
     });
   });
+  check('aucune consigne « Trois documents sont exigés… » au-dessus des uploads', () => {
+    const out = allText(up);
+    assert.ok(!out.includes('Trois documents sont exig'), out.slice(0, 300));
+    assert.ok(!out.includes('no ID number is asked'), out.slice(0, 300));
+  });
   const frontBox = byTestId(up, 'cni-front')[0];
   await TestRenderer.act(async () => { frontBox.props.onPress(); await flush(); });
   check('la photo choisie est convertie en data URI (persistante + téléchargeable)', () => {
