@@ -6,7 +6,8 @@ import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { ScreenHeader, Stars, Badge, Loading, Button, RatingInput } from '../../components/common';
 import { CountryFlag, TransportIcon, RouteLine, CategoryChips, PricePerKg, CapacityGauge } from '../../components/trip';
 import Slider from '../../components/Slider';
-import { fetchTripDetail, bookKg, rateTarget, hasRatedTarget, ensureConversation } from '../../services/supabase';
+import { fetchTripDetail, bookKg, rateTarget, hasRatedTarget, ensureConversation, getPaymentMethods } from '../../services/supabase';
+import { PAYMENT_MODES, maskPaymentRef, getDemoTravelerMethods } from '../../data/payments';
 import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -53,11 +54,23 @@ export default function TripDetailScreen({ route, navigation }) {
   // Un même utilisateur ne peut pas noter deux fois le même profil.
   const [myScore, setMyScore] = useState(null);
 
+  // Modes de paiement acceptés par le voyageur : ses modes ENREGISTRÉS si
+  // l'annonce lui appartient, sinon les modes du voyageur de la démonstration.
+  const [payMethods, setPayMethods] = useState([]);
+  const [ownTrip, setOwnTrip] = useState(false);
+
   const loadDetail = () => {
     fetchTripDetail(id).then((d) => {
       setDetail(d);
       if (user) {
         hasRatedTarget(d.travelerId || id, user.email).then((s) => setMyScore(s)).catch(() => {});
+      }
+      const own = !!(user && d.userEmail && d.userEmail === user.email);
+      setOwnTrip(own);
+      if (own) {
+        getPaymentMethods().then((l) => setPayMethods(l || [])).catch(() => setPayMethods([]));
+      } else {
+        setPayMethods(getDemoTravelerMethods((d.traveler && d.traveler.name) || d.userName));
       }
     }).catch(() => {});
   };
@@ -247,6 +260,38 @@ export default function TripDetailScreen({ route, navigation }) {
           )}
         </View>
 
+        {/* Modes de paiement acceptés par le voyageur */}
+        {!isDemande && (
+          <View style={styles.card}>
+            <View style={styles.sectionTitleRow}>
+              <Ionicons name="card-outline" size={20} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Modes de paiement acceptés</Text>
+            </View>
+            {ownTrip && payMethods.length === 0 ? (
+              <Text style={styles.payEmpty}>
+                Aucun mode enregistré — ajoutez vos moyens de paiement dans Profil → Gestion des paiements pour les afficher ici.
+              </Text>
+            ) : (
+              <View style={styles.payWrap}>
+                {payMethods.map((m, i) => {
+                  const meta = PAYMENT_MODES[m.type] || PAYMENT_MODES.orange;
+                  return (
+                    <View key={(m.type || 'm') + '_' + i} style={styles.payChip}>
+                      <View style={[styles.payIcon, { backgroundColor: meta.color }]}>
+                        <Ionicons name={meta.icon} size={14} color={meta.text} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.payLabel}>{meta.label}</Text>
+                        <Text style={styles.payRef}>{maskPaymentRef(m.type, m.ref)}{m.name ? ' · ' + m.name : ''}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Catégories */}
         <View style={styles.card}>
           <View style={styles.sectionTitleRow}>
@@ -399,6 +444,12 @@ const styles = StyleSheet.create({
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.primaryDark, marginLeft: 8 },
   prohibitedWrap: { flexDirection: 'row', flexWrap: 'wrap' },
+  payWrap: { gap: 10 },
+  payChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.inputBg, borderRadius: 12, padding: 10 },
+  payIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  payLabel: { fontSize: 13, fontWeight: '800', color: colors.text },
+  payRef: { fontSize: 12, fontWeight: '700', color: colors.primary, marginTop: 1 },
+  payEmpty: { fontSize: 13, color: colors.muted, lineHeight: 19 },
   prohibited: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#FBEAEA', borderRadius: radius.sm,

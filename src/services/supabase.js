@@ -24,6 +24,7 @@ const KEY_SHIPMENTS = 'travex.shipments'; // colis à suivre (expéditeur / voya
 const KEY_CONVERSATIONS = 'travex.conversations'; // conversations de messagerie
 const KEY_REPORTS = 'travex.reports'; // signalements d'utilisateurs (preuves + raison)
 const KEY_FAVORITES = 'travex.favoris'; // voyages mis en favori (affichés en premier à l'accueil)
+const KEY_PAYMENT_METHODS = 'travex.paymentMethods'; // modes de paiement enregistrés par l'utilisateur
 
 // ============ COMPTES PRÉCONFIGURÉS (admin + compte vérifié) ============
 // Accès de test fournis à l'utilisateur.
@@ -783,8 +784,39 @@ export async function getEarnings() {
     .sort((a, b) => b.at - a.at);
 }
 
+// ---------- Modes de paiement enregistrés (comptabilité virtuelle) ----------
+// L'utilisateur enregistre les références de ses comptes (Orange Money, MTN
+// MoMo, PayPal, carte bancaire) pour que ses correspondants sachent comment
+// le payer. Un ou plusieurs modes possibles. Phase 1 : stockage local.
+export async function getPaymentMethods() {
+  return await localStore.get(KEY_PAYMENT_METHODS, []);
+}
+
+export async function addPaymentMethod({ type, ref, name, extra }) {
+  const list = await localStore.get(KEY_PAYMENT_METHODS, []);
+  const method = {
+    id: 'pm_' + Date.now(),
+    type, // 'orange' | 'mtn' | 'paypal' | 'card'
+    ref: String(ref || '').trim(),
+    name: String(name || '').trim(),
+    extra: extra ? String(extra).trim() : null,
+    createdAt: Date.now(),
+  };
+  list.push(method);
+  await localStore.set(KEY_PAYMENT_METHODS, list);
+  return method;
+}
+
+export async function removePaymentMethod(id) {
+  const list = await localStore.get(KEY_PAYMENT_METHODS, []);
+  const out = list.filter((m) => m.id !== id);
+  await localStore.set(KEY_PAYMENT_METHODS, out);
+  return out;
+}
+
 // Crée (ou met à jour) le suivi d'un colis. Génère PIN + QR quand le vol atterrit.
-export async function upsertShipment(data) {  const list = await localStore.get(KEY_SHIPMENTS, []);
+export async function upsertShipment(data) {
+  const list = await localStore.get(KEY_SHIPMENTS, []);
   const idx = list.findIndex((s) => s.id === data.id);
   const next = { ...data };
   if (next.status === 'landed' && !next.pin) {
