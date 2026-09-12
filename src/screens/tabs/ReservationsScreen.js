@@ -16,12 +16,19 @@ const AVATARS = {
   'Erick T.': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=150',
 };
 
+// Trois étapes seulement (l'étape « Vol atterri » a été supprimée) :
+//   pending     → en attente de prise en charge par le voyageur
+//   in_transit  → le voyageur a le colis (PIN de livraison disponible)
+//   delivered   → colis remis contre PIN
+// Les anciennes données locales encore en 'landed' sont ramenées à
+// 'in_transit' par normalizeStatus() (et migrées côté service).
 const STATUS_MAP = {
   pending: { key: 'track.readyPickup', bg: '#FEF3E2', text: '#92600C', border: '#FADDB8', icon: 'time' },
   in_transit: { key: 'track.scanned', bg: '#EFF6FF', text: '#1D4ED8', border: '#DBEAFE', icon: 'airplane' },
-  landed: { key: 'track.landed', bg: '#ECFDF5', text: '#047857', border: '#A7F3D0', icon: 'checkmark-circle' },
   delivered: { key: 'track.deliveredSuccess', bg: '#ECFDF5', text: '#047857', border: '#A7F3D0', icon: 'checkmark-done' },
 };
+
+const normalizeStatus = (s) => (s === 'landed' ? 'in_transit' : s);
 
 function CloseBtn({ onPress }) {
   return (
@@ -103,7 +110,7 @@ function ScannerModal({ visible, onClose, onScan, shipment }) {
 }
 
 // ---------- Modale Saisie du PIN ----------
-function PinModal({ visible, onClose, onValidate }) {
+function PinModal({ visible, onClose, onValidate, expectedPin }) {
   const { t } = useLanguage();
   const [digits, setDigits] = useState('');
   const refs = useRef([]);
@@ -115,6 +122,12 @@ function PinModal({ visible, onClose, onValidate }) {
   const validate = () => {
     if (digits.length !== 4) {
       Alert.alert(t('track.pinModalTitle'), t('track.pinInvalid'));
+      return;
+    }
+    // Le code saisi doit correspondre au PIN secret du colis, communiqué par le
+    // destinataire au moment de la remise : sans cela, pas de statut « livré ».
+    if (expectedPin && digits !== String(expectedPin)) {
+      Alert.alert(t('track.pinModalTitle'), t('track.pinWrong'));
       return;
     }
     onClose();
@@ -263,11 +276,11 @@ function ChatModal({ visible, onClose, name }) {
 // ---------- Carte d'un colis ----------
 function ShipmentCard({ item, onViewQR, onChat, onScan, onEnterPin }) {
   const { t } = useLanguage();
-  const sm = STATUS_MAP[item.status] || STATUS_MAP.pending;
-  const isLanded = item.status === 'landed' || item.status === 'delivered';
+  const status = normalizeStatus(item.status);
+  const sm = STATUS_MAP[status] || STATUS_MAP.pending;
   const counterparty = item.role === 'sender'
     ? { label: t('track.traveler'), person: item.counterparty }
-    : { label: item.status === 'landed' || item.status === 'delivered' ? t('track.recipient') : t('track.sender'), person: item.counterparty };
+    : { label: status === 'delivered' ? t('track.recipient') : t('track.sender'), person: item.counterparty };
   const avatarUri = AVATARS[item.counterparty?.name] || item.counterparty?.avatar;
 
   return (
@@ -319,9 +332,13 @@ function ShipmentCard({ item, onViewQR, onChat, onScan, onEnterPin }) {
             <Text style={cc.routeCity}>{item.from} ({item.fromCode})</Text>
           </View>
           <View style={cc.routeMid}>
-            <Ionicons name={item.status === 'delivered' ? 'checkmark' : 'airplane'} size={14} color={item.status === 'delivered' ? colors.green : '#059669'} />
+            <Ionicons name={status === 'delivered' ? 'checkmark' : 'airplane'} size={14} color={status === 'delivered' ? colors.green : '#059669'} />
             <View style={cc.routeLine} />
-            <Text style={cc.routeState}>{item.status === 'delivered' ? t('track.flightDone') : item.status === 'in_transit' ? t('track.enTransit') : t('track.flightDone')}</Text>
+            <Text style={cc.routeState}>
+              {status === 'delivered'
+                ? t('track.flightDone')
+                : status === 'in_transit' ? t('track.enTransit') : t('track.flightUpcoming')}
+            </Text>
           </View>
           <View style={[cc.routeEnd, { alignItems: 'flex-end' }]}>
             <Text style={cc.routeLabel}>{t('publish.to')}</Text>
@@ -330,8 +347,8 @@ function ShipmentCard({ item, onViewQR, onChat, onScan, onEnterPin }) {
         </View>
       </View>
 
-      {/* Zone PIN (expéditeur, après atterrissage) */}
-      {item.role === 'sender' && isLanded && (
+      {/* Zone PIN (expéditeur) : disponible dès que le voyageur a pris le colis en charge */}
+      {item.role === 'sender' && status === 'in_transit' && !!item.pin && (
         <View style={cc.pinZone}>
           <View style={cc.pinIconBox}><Ionicons name="key" size={20} color={colors.white} /></View>
           <View style={{ flex: 1 }}>
@@ -348,10 +365,17 @@ function ShipmentCard({ item, onViewQR, onChat, onScan, onEnterPin }) {
       {/* Actions / CTA selon le rôle */}
       {item.role === 'sender' ? (
         <View style={cc.actions}>
-          <TouchableOpacity style={cc.actGhost} onPress={() => onViewQR(item)}>
-            <Ionicons name="qr-code" size={16} color={colors.primary} />
-            <Text style={[cc.actGhostText, { color: colors.text }]}>{t('track.viewQR')}</Text>
-          </TouchableOpacity>
+          {status === 'delivered' ? (
+            <View style={cc.doneChip}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.green} />
+              <Text style={cc.doneChipText}>{t('track.deliveredSuccess')}</Text>
+            </View>
+          ) : (
+            <TouchableOpacity style={cc.actGhost} onPress={() => onViewQR(item)}>
+              <Ionicons name="qr-code" size={16} color={colors.primary} />
+              <Text style={[cc.actGhostText, { color: colors.text }]}>{t('track.viewQR')}</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={cc.actBrand} onPress={() => onChat(item)}>
             <Ionicons name="chatbubbles" size={16} color={colors.primary} />
             <Text style={cc.actBrandText}>{t('track.chat')}</Text>
@@ -359,17 +383,12 @@ function ShipmentCard({ item, onViewQR, onChat, onScan, onEnterPin }) {
         </View>
       ) : (
         <View style={cc.actions}>
-          {item.status === 'delivered' ? (
+          {status === 'delivered' ? (
             <View style={cc.doneChip}>
               <Ionicons name="checkmark-circle" size={16} color={colors.green} />
               <Text style={cc.doneChipText}>{t('track.deliveredSuccess')}</Text>
             </View>
-          ) : item.status === 'in_transit' ? (
-            <View style={cc.doneChip}>
-              <Ionicons name="checkmark-circle" size={16} color="#1D4ED8" />
-              <Text style={[cc.doneChipText, { color: '#1D4ED8' }]}>{t('track.scanned')}</Text>
-            </View>
-          ) : item.status === 'landed' ? (
+          ) : status === 'in_transit' ? (
             <TouchableOpacity style={[cc.actPrimary, { backgroundColor: colors.green }]} onPress={() => onEnterPin(item)}>
               <Ionicons name="key" size={16} color={colors.white} />
               <Text style={cc.actPrimaryText}>{t('track.enterPin')}</Text>
@@ -403,15 +422,16 @@ export default function ReservationsScreen() {
   const list = items.filter((it) =>
     it.role === (tab === 'my' ? 'sender' : 'traveler') &&
     (filter === 'all'
-      || (filter === 'pending' && it.status === 'pending')
-      || (filter === 'inTransit' && (it.status === 'in_transit' || it.status === 'landed'))
-      || (filter === 'delivered' && it.status === 'delivered'))
+      || (filter === 'pending' && normalizeStatus(it.status) === 'pending')
+      || (filter === 'inTransit' && normalizeStatus(it.status) === 'in_transit')
+      || (filter === 'delivered' && normalizeStatus(it.status) === 'delivered'))
   );
   const senderCount = items.filter((i) => i.role === 'sender').length;
   const travelerCount = items.filter((i) => i.role === 'traveler').length;
 
   const onScan = async (item) => { await setShipmentStatus(item.id, 'in_transit'); load(); };
-  const onEnterPin = async (item) => { await setShipmentStatus(item.id, 'delivered'); load(); };
+  // Appelée uniquement après validation du PIN dans la modale.
+  const confirmPin = async (item) => { if (!item) return; await setShipmentStatus(item.id, 'delivered'); load(); };
 
   const filters = [
     { key: 'all', label: t('track.all') },
@@ -461,14 +481,14 @@ export default function ReservationsScreen() {
               onViewQR={setQrFor}
               onChat={setChatFor}
               onScan={setScanner}
-              onEnterPin={onEnterPin}
+              onEnterPin={setPinFor}
             />
           ))
         )}
       </ScrollView>
 
       <ScannerModal visible={!!scanner} onClose={() => setScanner(null)} onScan={() => onScan(scanner)} shipment={scanner} />
-      <PinModal visible={!!pinFor} onClose={() => setPinFor(null)} onValidate={() => onEnterPin(pinFor)} />
+      <PinModal visible={!!pinFor} onClose={() => setPinFor(null)} onValidate={() => confirmPin(pinFor)} expectedPin={pinFor?.pin} />
       <QrModal visible={!!qrFor} onClose={() => setQrFor(null)} shipment={qrFor} />
       <ChatModal visible={!!chatFor} onClose={() => setChatFor(null)} name={chatFor?.counterparty?.name} />
     </SafeAreaView>

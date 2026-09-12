@@ -97,6 +97,63 @@ eas build -p ios --profile development
 | Connexion démo | `demo@travexglobal.com` / `Demo1234!` |
 | Bundle ID iOS | `com.travexglobal.app` |
 | Profil EAS simulateur | `preview-ios` |
+| Colis démo « en cours » (onglet KiloPass) | `GP-7408` — PIN de livraison `2915` |
+| Colis démo expéditeur | `GP-8921` — son PIN s'affiche sur la carte (`5730`) |
+
+Le suivi d'un colis ne compte plus que **3 étapes** : *En attente* → *En cours*
+(prise en charge par le voyageur, PIN généré) → *Livré* (remise contre PIN).
+L'étape « Vol atterri » a été supprimée.
+
+---
+
+## 📋 Fiche de build — exactement quoi saisir
+
+### Une seule fois (compte Expo gratuit — jamais de compte Apple)
+
+| Étape | Commande | Ce que vous saisissez |
+|---|---|---|
+| Installer le CLI | `npm install -g eas-cli` | rien |
+| Se connecter | `eas login` | **e-mail** + **mot de passe** de votre compte https://expo.dev (création gratuite). Aucun Apple ID, aucune carte bancaire. |
+| Lier le projet | `eas init` | accepter le `projectId` déjà présent : `773d6b4f-1108-4f46-aa07-34169d7ab8a0`. Si EAS indique que ce projet n'est pas sur **votre** compte : relancez `eas init`, choisissez **« Create a new project »** et donnez le slug `travex-global`. |
+
+### Build iOS SIMULATEUR (le build « démo » sans compte Apple)
+
+```bash
+npm run build:ios-sim     # = eas build -p ios --profile preview-ios
+```
+
+| Question du CLI | Réponse |
+|---|---|
+| Identifiants Apple / certificat / provisioning | **aucune question** : le profil `preview-ios` contient `"simulator": true`, EAS ne demande rien à Apple. |
+| `Would you like to submit this build…?` | `No` (vous installez le `.app` vous-même dans le simulateur). |
+
+### Build Android APK (aucun compte Apple non plus)
+
+```bash
+npm run build:apk         # = eas build -p android --profile preview
+```
+
+| Question du CLI | Réponse |
+|---|---|
+| `Generate a new Android Keystore?` | **Yes** (EAS crée et conserve la clé de signature). |
+| `Would you like to submit this build…?` | `No` |
+
+### Valeurs déjà en place (rien à changer pour la démo)
+
+| Champ | Où | Valeur |
+|---|---|---|
+| Nom de l'app | `app.json` | `TRAVEX GLOBAL` |
+| Slug | `app.json` | `travex-global` |
+| Version | `app.json` | `1.0.0` |
+| Bundle ID iOS | `app.json` → `ios.bundleIdentifier` | `com.travexglobal.app` |
+| Package Android | `app.json` → `android.package` | `com.travexglobal.app` |
+| Projet EAS | `app.json` → `extra.eas.projectId` | `773d6b4f-1108-4f46-aa07-34169d7ab8a0` |
+| Profil simulateur | `eas.json` | `preview-ios` (`ios.simulator: true`) |
+| Profil APK | `eas.json` | `preview` (`android.buildType: apk`) |
+
+> `eas.json` utilise `appVersionSource: "remote"` : les numéros de build viennent
+> des serveurs d'Expo (parfait pour le cloud). Si vous voulez un jour compiler
+> hors ligne (`eas build --local`), passez cette valeur à `"local"`.
 
 ---
 

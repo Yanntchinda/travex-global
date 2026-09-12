@@ -11,7 +11,6 @@ import { PAYMENT_MODES, maskPaymentRef, getDemoTravelerMethods } from '../../dat
 import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import Gate from '../../components/Gate';
 import AppModal from '../../components/AppModal';
 
 function OptionSheet({ visible, onClose, onChoose, t }) {
@@ -78,17 +77,93 @@ export default function TripDetailScreen({ route, navigation }) {
 
   if (!detail) return <Loading />;
 
-  // Modèle "transparence" : les détails nécessitent un compte.
+  // Visiteurs sans compte : APERÇU LIMITÉ (jamais les détails complets).
+  //   Public     : trajet, dates, transport, tarif/kg, kg restants, catégories.
+  //   Verrouillé : profil & avis du voyageur, modes de paiement, réservation
+  //                de kg, messagerie et notation.
   if (!user) {
+    const pr = detail.route || {
+      from: detail.from, to: detail.to,
+      fromDate: detail.fromDate, toDate: detail.toDate, transport: detail.transport,
+    };
+    const pCapacity = detail.capacityKg || 0;
+    const pBooked = detail.bookedKg || 0;
+    const lockedItems = [
+      t('announce.previewItemProfile'),
+      t('announce.previewItemPayment'),
+      t('announce.previewItemBook'),
+    ];
+
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScreenHeader title={t('announce.details')} onBack={() => navigation.goBack()} />
-        <Gate
-          icon="lock-closed-outline"
-          title={t('announce.gate')}
-          subtitle={t('announce.gateDesc')}
-          onLogin={() => navigation.navigate('SignIn')}
-        />
+
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Bandeau « aperçu limité » */}
+          <View style={styles.previewBadgeRow}>
+            <Ionicons name="eye-outline" size={14} color="#92600C" />
+            <Text style={styles.previewBadgeText}>{t('announce.previewBadge')}</Text>
+          </View>
+
+          {/* Trajet — public */}
+          <View style={styles.card}>
+            <RouteLine from={pr.from} to={pr.to} fromDate={pr.fromDate} toDate={pr.toDate} transport={pr.transport} />
+            <View style={styles.directRow}>
+              <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+              <Text style={styles.directText}>{t('announce.direct')}</Text>
+            </View>
+          </View>
+
+          {/* Tarif + capacité — public, SANS calculateur ni bouton réserver */}
+          <View style={styles.estimatorCard}>
+            <View style={styles.estHead}>
+              <Text style={styles.estLabel}>{t('announce.pricePerKgLabel')}</Text>
+              <PricePerKg pricePerKg={detail.pricePerKg || 0} big />
+            </View>
+            <CapacityGauge totalKg={pCapacity} bookedKg={pBooked} variant="modal" />
+          </View>
+
+          {/* Catégories — public */}
+          {detail.categories && detail.categories.length > 0 ? (
+            <View style={styles.card}>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="pricetags-outline" size={20} color={colors.primary} />
+                <Text style={styles.sectionTitle}>{t('announce.category')}</Text>
+              </View>
+              <CategoryChips categories={detail.categories} />
+            </View>
+          ) : null}
+
+          {/* Ce qui reste masqué */}
+          <View style={styles.lockedCard}>
+            <View style={styles.lockedIcon}><Ionicons name="lock-closed" size={20} color={colors.primary} /></View>
+            <Text style={styles.lockedTitle}>{t('announce.previewHidden')}</Text>
+            {lockedItems.map((label) => (
+              <View key={label} style={styles.lockedRow}>
+                <Ionicons name="lock-closed-outline" size={13} color={colors.muted} />
+                <Text style={styles.lockedText}>{label}</Text>
+              </View>
+            ))}
+            <Text style={styles.lockedDesc}>{t('announce.previewDesc')}</Text>
+          </View>
+        </ScrollView>
+
+        {/* Aucun accès réservation / messagerie tant que le visiteur n'a pas de compte */}
+        <View style={styles.actionBar}>
+          <Button
+            title={t('auth.loginBtn')}
+            variant="outline"
+            icon="log-in-outline"
+            onPress={() => navigation.navigate('SignIn')}
+            style={{ flex: 1, marginRight: spacing.sm }}
+          />
+          <Button
+            title={t('announce.previewCta')}
+            icon="person-add-outline"
+            onPress={() => navigation.navigate('Register')}
+            style={{ flex: 1, marginLeft: spacing.sm }}
+          />
+        </View>
       </SafeAreaView>
     );
   }
@@ -478,5 +553,30 @@ const styles = StyleSheet.create({
   bookSub: { fontSize: 15, color: colors.text, marginTop: spacing.sm, textAlign: 'center' },
   bookRemaining: { fontSize: 13, color: colors.green, fontWeight: '700', marginTop: 6 },
   bookActions: { flexDirection: 'row', marginTop: spacing.xl, width: '100%' },
+  // Aperçu limité (visiteur sans compte)
+  previewBadgeRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: '#FEF3E2', borderWidth: 1, borderColor: '#FADDB8',
+    borderRadius: 20, paddingHorizontal: spacing.md, paddingVertical: 7,
+    alignSelf: 'center', marginBottom: spacing.md,
+  },
+  previewBadgeText: { fontSize: 12, fontWeight: '800', color: '#92600C', textTransform: 'uppercase', letterSpacing: 0.5 },
+  lockedCard: {
+    backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg,
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
+    borderStyle: 'dashed', alignItems: 'center',
+  },
+  lockedIcon: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primaryLight,
+    alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm,
+  },
+  lockedTitle: { fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: spacing.md, textAlign: 'center' },
+  lockedRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%',
+    backgroundColor: colors.inputBg, borderRadius: 12, paddingHorizontal: spacing.md,
+    paddingVertical: 10, marginBottom: 8,
+  },
+  lockedText: { fontSize: 13, fontWeight: '700', color: colors.muted },
+  lockedDesc: { fontSize: 13, color: colors.muted, lineHeight: 19, textAlign: 'center', marginTop: spacing.sm },
 });
 ;

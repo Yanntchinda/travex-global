@@ -571,7 +571,7 @@ export async function getNotifications() {
 function buildNotification(d, time) {
   const type = d.type || 'info';
   const icons = {
-    proposal: 'chatbubble-ellipses', landing: 'airplane', shipment: 'archive',
+    proposal: 'chatbubble-ellipses', transit: 'airplane', shipment: 'archive',
     publish: 'megaphone', status: 'checkmark-circle', message: 'chatbubble',
     booking: 'cube', info: 'notifications',
   };
@@ -594,10 +594,10 @@ function buildNotification(d, time) {
         body_en: `${name} offers ${d.kg} kg at ${d.pricePerKg} €/kg (${d.from} → ${d.to}).`,
         time: d.time || time,
       };
-    case 'landing':
+    case 'transit':
       return {
         icon,
-        title_fr: 'Le vol a atterri 💡', title_en: 'Flight landed 💡',
+        title_fr: 'Colis pris en charge ✈️', title_en: 'Parcel picked up ✈️',
         body_fr: 'Votre Code PIN de livraison est disponible sur votre espace de suivi.',
         body_en: 'Your delivery PIN is available on your tracking space.',
         time: d.time || time,
@@ -733,8 +733,10 @@ export async function createProposal({ demandId, date, kg, pricePerKg, message, 
 
 // ---------- Suivi des colis (Espace Réservations : expéditeur / voyageur) ----------
 // `role` : 'sender' (colis expédié/destinataire) | 'traveler' (colis porté par le voyageur)
-// `status` : 'pending' (en attente de prise en charge) | 'in_transit' (en cours)
-//            | 'landed' (atterri — PIN généré) | 'delivered' (livré)
+// `status` : 3 étapes seulement (l'étape « atterri » a été supprimée)
+//            'pending' (en attente de prise en charge)
+//            | 'in_transit' (pris en charge — PIN de livraison généré)
+//            | 'delivered' (remis contre PIN)
 // Sécurité : le PIN de livraison est TOUJOURS différent des chiffres de la
 // référence du colis. Le voyageur connaît la référence (via le QR Code) mais
 // ne doit jamais pouvoir en déduire le PIN secret, transmis séparément par
@@ -758,7 +760,7 @@ export async function ensureShipmentsSeeded() {
   list = [
     {
       // Référence publique (QR) GP-8921 — PIN de livraison DIFFÉRENT : 5730.
-      id: 's1', ref: 'GP-8921', qrData: 'GP-SAFE-8921', role: 'sender', status: 'landed', pin: '5730',
+      id: 's1', ref: 'GP-8921', qrData: 'GP-SAFE-8921', role: 'sender', status: 'in_transit', pin: '5730',
       parcel: 'Vêtements & Documents', weight: 5, pricePerKg: 12, total: 60,
       from: 'Douala', to: 'Genève',
       fromCode: 'DLA', toCode: 'GVA', transport: 'Avion',
@@ -774,7 +776,7 @@ export async function ensureShipmentsSeeded() {
       createdAt: now - 43200000,
     },
     {
-      id: 's3', ref: 'GP-7408', qrData: null, role: 'traveler', status: 'landed', pin: '2915',
+      id: 's3', ref: 'GP-7408', qrData: null, role: 'traveler', status: 'in_transit', pin: '2915',
       parcel: 'Ndjoka / Épices', weight: 10, pricePerKg: 14, total: 140,
       from: 'Yaoundé', to: 'Genève',
       fromCode: 'NSI', toCode: 'GVA', transport: 'Avion',
@@ -803,12 +805,23 @@ export async function getShipments() {
   let changed = false;
   const next = (list || []).map((s) => {
     let out = s;
+    // Migration : l'étape « atterri » n'existe plus — les anciens colis
+    // 'landed' passent en 'in_transit' (le PIN était déjà généré).
+    if (out.status === 'landed') {
+      out = { ...out, status: 'in_transit' };
+      changed = true;
+    }
     // Migration sécurité : les anciens colis dont le PIN était identique aux
     // chiffres de la référence (transmis ensemble au voyageur) reçoivent un
     // nouveau PIN indépendant.
     const refDigits = String(s.ref || '').replace(/\D/g, '');
     if (s.pin && refDigits && s.pin === refDigits) {
       out = { ...out, pin: genPin(out.ref) };
+      changed = true;
+    }
+    // Un colis en cours doit toujours avoir son PIN (il sert à la remise).
+    if (out.status === 'in_transit' && !out.pin) {
+      out = { ...out, pin: genPin(out.ref), qrData: out.qrData || genQR(out.ref || 'GP-0000') };
       changed = true;
     }
     if (!out.pricePerKg) {
@@ -896,15 +909,17 @@ export async function removePaymentMethod(id) {
   return out;
 }
 
-// Crée (ou met à jour) le suivi d'un colis. Génère PIN + QR quand le vol atterrit.
+// Crée (ou met à jour) le suivi d'un colis. Génère PIN + QR dès la prise en
+// charge du colis par le voyageur (l'étape « atterri » n'existe plus).
 export async function upsertShipment(data) {
   const list = await localStore.get(KEY_SHIPMENTS, []);
   const idx = list.findIndex((s) => s.id === data.id);
   const next = { ...data };
-  if (next.status === 'landed' && !next.pin) {
+  if (next.status === 'landed') next.status = 'in_transit'; // étape supprimée
+  if (next.status === 'in_transit' && !next.pin) {
     next.pin = genPin(next.ref || data.ref);
     next.qrData = genQR(next.ref || data.ref);
-    await addNotification({ type: 'landing' });
+    await addNotification({ type: 'transit' });
   }
   if (!next.qrData) next.qrData = genQR(next.ref || 'GP-0000');
   if (idx >= 0) list[idx] = next;
@@ -920,11 +935,14 @@ export async function setShipmentStatus(id, status, extra = {}) {
   let next = { ...found, ...extra };
   if (found) {
     next = { ...found, ...extra };
-    if (status === 'landed' && !next.pin) {
+    // L'étape « atterri » est supprimée : 'landed' retombe sur 'in_transit'.
+    const finalStatus = status === 'landed' ? 'in_transit' : status;
+    if (finalStatus === 'in_transit' && !next.pin) {
       next.pin = genPin(next.ref || 'GP-0000');
       next.qrData = genQR(next.ref || 'GP-0000');
+      await addNotification({ type: 'transit' });
     }
-    next.status = status;
+    next.status = finalStatus;
   }
   const out = list.map((s) => (s.id === id ? next : s));
   await localStore.set(KEY_SHIPMENTS, out);
