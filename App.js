@@ -45,6 +45,7 @@ import TravelerProfileScreen from './src/screens/detail/TravelerProfileScreen';
 import ReportScreen from './src/screens/report/ReportScreen';
 import PublishTripScreen from './src/screens/publish/PublishTripScreen';
 import PersonalInfoScreen from './src/screens/profile/PersonalInfoScreen';
+import ChangeStatusScreen from './src/screens/profile/ChangeStatusScreen';
 import PaymentScreen from './src/screens/profile/PaymentScreen';
 import PaymentsHistoryScreen from './src/screens/profile/PaymentsHistoryScreen';
 import EarningsScreen from './src/screens/profile/EarningsScreen';
@@ -116,6 +117,7 @@ function RootNavigator() {
       <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
       <Stack.Screen name="Admin" component={AdminScreen} />
       <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
+      <Stack.Screen name="ChangeStatus" component={ChangeStatusScreen} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
       <Stack.Screen name="PaymentsHistory" component={PaymentsHistoryScreen} />
       <Stack.Screen name="Earnings" component={EarningsScreen} />

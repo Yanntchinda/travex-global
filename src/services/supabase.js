@@ -39,7 +39,10 @@ export const localStore = {
   async remove(key) { try { await AsyncStorage.removeItem(key); } catch {} },
 };
 
+// Rôle du compte : 'traveler' (peut publier des départs une fois vérifié) ou
+// 'sender' (expéditeur : publie des demandes de colis, sans CNI).
 function buildUser(p) {
+  const role = p.role === 'traveler' ? 'traveler' : 'sender';
   return {
     id: (p.email || 'u_') + '_' + Date.now(),
     firstName: p.firstName || '',
@@ -50,10 +53,14 @@ function buildUser(p) {
     avatar: p.avatar || null,
     cniPhoto: p.cniPhoto || null,
     cniSelfie: p.cniSelfie || null,
+    cniNumber: p.cniNumber || null,
     initials: ((p.firstName || 'X')[0] + (p.lastName || 'X')[0]).toUpperCase(),
     verified: false,
-    verificationPending: true,
-    role: 'user',
+    verificationPending: role === 'traveler',
+    // Voyageur : la vérification démarre dès l'inscription (CNI fournie).
+    cniSubmittedAt: role === 'traveler' ? Date.now() : null,
+    createdAt: Date.now(),
+    role,
     stats: { voyages: 0, demandes: 0, note: 0 },
   };
 }
@@ -65,6 +72,7 @@ export async function registerUser(d) {
   const base = buildUser({
     firstName: d.firstName, lastName: d.lastName, email: d.email,
     phone: d.phone, location: d.location, cniPhoto: d.cniPhoto, cniSelfie: d.cniSelfie, avatar: d.avatar,
+    role: d.role, cniNumber: d.cniNumber,
   });
   const users = await localStore.get(KEY_USERS, []);
   users.push(base);
@@ -89,11 +97,12 @@ export async function signIn({ email, password }) {
     await localStore.set(KEY_SESSION, 'active');
     return { user: admin };
   }
-  // Compte vérifié (démo)
+  // Compte vérifié (démo) — voyageur vérifié : peut publier des départs.
   if (email.toLowerCase() === VERIFIED_CREDENTIALS.email && password === VERIFIED_CREDENTIALS.password) {
     const u = {
       id: 'verified_1', firstName: 'Jean', lastName: 'Dupont (vérifié)', email, initials: 'JD',
-      avatar: null, verified: true, verificationPending: false, role: 'user',
+      avatar: null, verified: true, verificationPending: false, role: 'traveler',
+      cniNumber: 'CNI-DÉMO-0001',
       stats: { voyages: 1, demandes: 0, note: 5 },
     };
     await localStore.set(KEY_USER, u);
@@ -129,6 +138,79 @@ export async function updateUser(patch) {
   const cur = (await localStore.get(KEY_USER)) || {};
   const next = { ...cur, ...patch };
   await localStore.set(KEY_USER, next);
+  return next;
+}
+
+// ---------- Statut du compte : voyageur / expéditeur + vérification ----------
+// Règles :
+//   - Seul un compte VOYAGEUR VÉRIFIÉ peut publier un départ.
+//   - Les expéditeurs (compte ou invité) publient des demandes de colis,
+//     sans identification complète.
+//   - « Changer de statut » (Profil) : l'expéditeur devient voyageur en
+//     fournissant ses références + sa CNI ; la publication n'est possible
+//     qu'une fois le compte vérifié.
+// Phase 1 : vérification simulée (délai ci-dessous). Phase 2 : vérification
+// réelle des pièces par l'équipe + serveur sécurisé.
+export const VERIF_DELAY_MS = 20000; // simulation : ~20 secondes
+
+export function verificationState(user) {
+  if (!user) return { phase: 'guest' };
+  if (user.role === 'admin') return { phase: 'ok' };
+  // 'user' = anciens comptes créés avant les rôles → traités en voyageurs.
+  const isTraveler = user.role === 'traveler' || user.role === 'user';
+  if (!isTraveler) return { phase: 'sender' };
+  if (user.verified) return { phase: 'ok' };
+  const base = Number(user.cniSubmittedAt) || Number(user.createdAt) || 0;
+  const secondsLeft = Math.max(0, Math.ceil((base + VERIF_DELAY_MS - Date.now()) / 1000));
+  return secondsLeft <= 0 ? { phase: 'ready' } : { phase: 'pending', secondsLeft };
+}
+
+// Fait passer le compte à « vérifié » quand le délai simulé est écoulé.
+// Met à jour la session + le registre (visible côté admin) et notifie.
+export async function refreshVerification(user) {
+  if (!user) return user;
+  if (verificationState(user).phase !== 'ready') return user;
+  const next = { ...user, verified: true, verificationPending: false, verifiedAt: Date.now() };
+  await localStore.set(KEY_USER, next);
+  const users = await localStore.get(KEY_USERS, []);
+  const i = users.findIndex((u) => u.email === user.email);
+  if (i >= 0) {
+    users[i] = { ...users[i], ...next };
+    await localStore.set(KEY_USERS, users);
+  }
+  await addNotification({
+    icon: 'shield-checkmark-outline',
+    title_fr: 'Compte vérifié ✅', title_en: 'Account verified ✅',
+    body_fr: 'Votre compte voyageur est vérifié : vous pouvez publier vos départs.',
+    body_en: 'Your traveler account is verified: you can now post trips.',
+  });
+  return next;
+}
+
+// « Changer de statut » : l'expéditeur (ou l'invité identifié) devient
+// voyageur en fournissant ses références et sa CNI → vérification en cours.
+export async function becomeTraveler({ fullName, phone, location, cniNumber }) {
+  const cur = (await localStore.get(KEY_USER)) || {};
+  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  const next = {
+    ...cur,
+    role: 'traveler',
+    firstName: parts[0] || cur.firstName || '',
+    lastName: parts.slice(1).join(' ') || cur.lastName || '',
+    phone: String(phone || cur.phone || '').trim(),
+    location: String(location || cur.location || '').trim(),
+    cniNumber: String(cniNumber || '').trim(),
+    cniSubmittedAt: Date.now(),
+    verified: false,
+    verificationPending: true,
+  };
+  next.initials = ((next.firstName || 'X')[0] + (next.lastName || 'X')[0]).toUpperCase();
+  await localStore.set(KEY_USER, next);
+  const users = await localStore.get(KEY_USERS, []);
+  const i = users.findIndex((u) => u.email === cur.email);
+  if (i >= 0) users[i] = { ...users[i], ...next };
+  else users.push(next);
+  await localStore.set(KEY_USERS, users);
   return next;
 }
 

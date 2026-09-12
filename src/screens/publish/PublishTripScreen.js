@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,11 +9,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CATEGORIES } from '../../i18n/translations';
 import Gate from '../../components/Gate';
-import { createTrip } from '../../services/supabase';
+import { createTrip, verificationState, refreshVerification } from '../../services/supabase';
 import AppModal from '../../components/AppModal';
 
 export default function PublishTripScreen({ route, navigation }) {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { t } = useLanguage();
   const type = route.params?.type || 'voyage';
   const isVoyage = type === 'voyage';
@@ -41,17 +41,71 @@ export default function PublishTripScreen({ route, navigation }) {
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Modèle transparence : il faut un compte pour publier.
-  if (!user) {
+  // Coordonnées invité : publier une DEMANDE sans compte (identification
+  // légère — nom + téléphone affichés sur l'annonce).
+  const [guestOpen, setGuestOpen] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+
+  // Compte à rebours de vérification + bascule automatique « vérifié »
+  // quand le délai simulé est écoulé (départs uniquement).
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!isVoyage) return;
+    const tryFlip = () => {
+      if (!user) return;
+      refreshVerification(user)
+        .then((u) => { if (u !== user) setUser(u); })
+        .catch(() => {});
+    };
+    tryFlip();
+    const iv = setInterval(() => { tryFlip(); setTick((x) => x + 1); }, 1000);
+    return () => clearInterval(iv);
+  }, [user, isVoyage]);
+
+  // Règles de publication :
+  //   - DEMANDE de colis : ouverte à tous (invités compris, sans compte).
+  //   - DÉPART : compte VOYAGEUR requis + compte VÉRIFIÉ (CNI) obligatoire.
+  const st = verificationState(user);
+  if (isVoyage && st.phase === 'guest') {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScreenHeader title={isVoyage ? t('publish.departureTitle') : t('publish.requestTitle')} onBack={() => navigation.goBack()} />
+        <ScreenHeader title={t('publish.departureTitle')} onBack={() => navigation.goBack()} />
         <Gate
-          icon="megaphone-outline"
-          title={t('announce.gate')}
-          subtitle={t('announce.gateDesc')}
+          icon="airplane-outline"
+          title={t('publish.gateTravelerTitle')}
+          subtitle={t('publish.gateTravelerDesc')}
           onLogin={() => navigation.navigate('SignIn')}
         />
+      </SafeAreaView>
+    );
+  }
+  if (isVoyage && st.phase === 'sender') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScreenHeader title={t('publish.departureTitle')} onBack={() => navigation.goBack()} />
+        <View style={styles.gateWrap}>
+          <View style={styles.gateIcon}><Ionicons name="swap-horizontal-outline" size={40} color={colors.primary} /></View>
+          <Text style={styles.gateTitle}>{t('publish.gateTravelerTitle')}</Text>
+          <Text style={styles.gateDesc}>{t('publish.gateSenderDesc')}</Text>
+          <Button title={t('publish.changeStatus')} icon="swap-horizontal-outline" onPress={() => navigation.navigate('ChangeStatus')} style={{ width: '100%', marginTop: spacing.lg }} />
+          <Text style={styles.gateHint}>{t('announce.gateDesc')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  if (isVoyage && (st.phase === 'pending' || st.phase === 'ready')) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScreenHeader title={t('publish.departureTitle')} onBack={() => navigation.goBack()} />
+        <View style={styles.gateWrap}>
+          <View style={[styles.gateIcon, { backgroundColor: '#FFF7E6' }]}><Ionicons name="hourglass-outline" size={40} color="#B7791F" /></View>
+          <Text style={styles.gateTitle}>{t('publish.gatePendingTitle')}</Text>
+          <Text style={styles.gateCount}>{Math.max(0, st.secondsLeft || 0)}s</Text>
+          <Text style={styles.gateDesc}>{t('publish.gatePendingDesc')}</Text>
+          <Button title={t('publish.refresh')} icon="refresh-outline" onPress={() => setTick((x) => x + 1)} style={{ width: '100%', marginTop: spacing.lg }} />
+          <Text style={styles.gateHint}>{t('status.pendingDesc')}</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -62,7 +116,7 @@ export default function PublishTripScreen({ route, navigation }) {
     );
   };
 
-  const submit = async () => {
+  const submit = async (guestVals) => {
     setError(null);
     setSuccess(null);
     if (!from.trim() || !to.trim()) {
@@ -88,8 +142,24 @@ export default function PublishTripScreen({ route, navigation }) {
       setError(t('publish.categoriesRequired'));
       return;
     }
-    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || (user.name || '');
-    const initials = fullName
+    // Auteur : utilisateur connecté, ou invité (demande sans compte —
+    // identification légère : nom + téléphone sur l'annonce).
+    let authorName = '';
+    let authorEmail = '';
+    let authorPhone = '';
+    if (user) {
+      authorName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || (user.name || '');
+      authorEmail = user.email || '';
+      authorPhone = user.phone || '';
+    } else if (guestVals && guestVals.name && guestVals.phone) {
+      authorName = guestVals.name;
+      authorEmail = 'invite@travex.app';
+      authorPhone = guestVals.phone;
+    } else {
+      setGuestOpen(true);
+      return;
+    }
+    const initials = authorName
       .split(/[\s.]+/)
       .filter(Boolean)
       .slice(0, 2)
@@ -125,12 +195,13 @@ export default function PublishTripScreen({ route, navigation }) {
       budgetPerKg: isVoyage ? 0 : Number(price) || 0,
       parcelImage: isVoyage ? null : parcelImage,
       capacity: Number(weight) || 0,
-      userEmail: user.email,
-      userName: fullName,
+      userEmail: authorEmail,
+      userName: authorName,
+      userPhone: authorPhone,
       traveler: {
-        name: fullName || 'Voyageur',
+        name: authorName || 'Voyageur',
         initials,
-        verified: !!user.verified,
+        verified: !!user?.verified,
         rating: 0,
         reviews: 0,
       },
@@ -321,6 +392,47 @@ export default function PublishTripScreen({ route, navigation }) {
         />
       </ScrollView>
 
+      {/* Modale : coordonnées invité (demande sans compte) */}
+      <AppModal transparent visible={guestOpen} animationType="fade" onRequestClose={() => setGuestOpen(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.successCard}>
+            <View style={[styles.successIcon, { backgroundColor: colors.primary }]}><Ionicons name="id-card-outline" size={26} color={colors.white} /></View>
+            <Text style={styles.successTitle}>{t('publish.guestContactTitle')}</Text>
+            <Text style={styles.successBody}>{t('publish.guestContactDesc')}</Text>
+            <TextInput
+              style={styles.guestInput}
+              value={guestName}
+              onChangeText={setGuestName}
+              placeholder={t('publish.guestName')}
+              placeholderTextColor="#94A3B8"
+            />
+            <TextInput
+              style={styles.guestInput}
+              value={guestPhone}
+              onChangeText={setGuestPhone}
+              placeholder={t('publish.guestPhone')}
+              placeholderTextColor="#94A3B8"
+              keyboardType="phone-pad"
+            />
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg, width: '100%' }}>
+              <Button title={t('common.cancel')} onPress={() => setGuestOpen(false)} style={{ flex: 1, backgroundColor: colors.inputBg }} />
+              <Button
+                title={t('publish.guestContinue')}
+                icon="paper-plane-outline"
+                onPress={() => {
+                  const n = guestName.trim();
+                  const p = guestPhone.trim();
+                  if (!n || !p) return;
+                  setGuestOpen(false);
+                  submit({ name: n, phone: p });
+                }}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        </View>
+      </AppModal>
+
       {/* Confirmation de publication in-app */}
       <AppModal transparent visible={!!success} animationType="fade" onRequestClose={() => { setSuccess(null); navigation.goBack(); }}>
         <View style={styles.modalOverlay}>
@@ -376,4 +488,15 @@ const styles = StyleSheet.create({
   successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' },
   successTitle: { fontSize: 18, fontWeight: '900', color: colors.text, marginTop: spacing.md, textAlign: 'center' },
   successBody: { fontSize: 14, color: colors.text, marginTop: spacing.sm, lineHeight: 20, textAlign: 'center' },
+  // Écrans « verrou » (expéditeur / vérification en cours).
+  gateWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, backgroundColor: colors.bg },
+  gateIcon: { width: 88, height: 88, borderRadius: 44, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  gateTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginTop: spacing.lg, textAlign: 'center' },
+  gateCount: { fontSize: 40, fontWeight: '900', color: '#B7791F', marginTop: spacing.sm },
+  gateDesc: { fontSize: 14, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: spacing.sm },
+  gateHint: { fontSize: 12, color: colors.muted, marginTop: spacing.md, textAlign: 'center', lineHeight: 17 },
+  guestInput: {
+    width: '100%', height: 48, backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border,
+    borderRadius: 12, paddingHorizontal: 14, fontSize: 15, fontWeight: '600', color: colors.text, marginTop: spacing.sm,
+  },
 });

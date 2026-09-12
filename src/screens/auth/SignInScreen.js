@@ -93,6 +93,9 @@ export default function SignInScreen({ navigation }) {
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [signupBusy, setSignupBusy] = useState(false);
+  // Statut choisi à l'inscription : 'traveler' | 'sender' | null (obligatoire).
+  const [signupRole, setSignupRole] = useState(null);
+  const [signupCni, setSignupCni] = useState('');
 
   // Contact (visible ensuite dans le profil de l'utilisateur)
   const [signupPhone, setSignupPhone] = useState('');
@@ -143,12 +146,20 @@ export default function SignInScreen({ navigation }) {
   };
 
   const doSignup = async () => {
+    if (!signupRole) {
+      showToast(t('signin.roleRequired'), true);
+      return;
+    }
     if (!signupName.trim() || !signupEmail.trim() || !signupPassword) {
       showToast(t('signin.fillRequired'), true);
       return;
     }
     if (signupPassword !== signupConfirm) {
       showToast(t('signin.toastPwdMismatch'), true);
+      return;
+    }
+    if (signupRole === 'traveler' && !signupCni.trim()) {
+      showToast(t('signin.cniRequired'), true);
       return;
     }
     if (!acceptTerms) {
@@ -165,14 +176,18 @@ export default function SignInScreen({ navigation }) {
         lastName,
         email: signupEmail.trim(),
         password: signupPassword,
-        location: '',
-        phone: '',
+        location: signupLocation,
+        phone: signupPhone,
+        // Statut choisi : voyageur (avec CNI, vérification obligatoire avant
+        // de publier un départ) ou expéditeur (demandes de colis uniquement).
+        role: signupRole,
+        cniNumber: signupRole === 'traveler' ? signupCni.trim() : null,
         // CNI simulées pour que le profil passe en "en attente de vérification" (visible côté admin).
         cniPhoto: 'https://via.placeholder.com/300x180?text=CNI',
         cniSelfie: 'https://via.placeholder.com/300x180?text=Selfie',
       });
       setUser(user);
-      showToast(t('signin.signupSuccess'), false);
+      showToast(signupRole === 'traveler' ? t('signin.travelerPendingToast') : t('signin.signupSuccess'), false);
       setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] }), 700);
     } catch (e) {
       showToast(e.message, true);
@@ -289,6 +304,46 @@ export default function SignInScreen({ navigation }) {
               </>
             ) : (
               <>
+                {/* Choix du statut : voyageur ou expéditeur (obligatoire) */}
+                <Text style={styles.label}>{t('signin.roleTitle')}</Text>
+                <TouchableOpacity
+                  style={[styles.roleCard, signupRole === 'traveler' && styles.roleCardActive]}
+                  onPress={() => setSignupRole('traveler')}
+                  activeOpacity={0.85}
+                >
+                  <View style={[styles.roleIcon, signupRole === 'traveler' && styles.roleIconActive]}>
+                    <Ionicons name="airplane" size={20} color={signupRole === 'traveler' ? '#FFFFFF' : OCEAN.sky400} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.roleTitle}>{t('signin.roleTraveler')}</Text>
+                    <Text style={styles.roleDesc}>{t('signin.roleTravelerDesc')}</Text>
+                  </View>
+                  {signupRole === 'traveler' && <Ionicons name="checkmark-circle" size={20} color={OCEAN.sky400} />}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.roleCard, signupRole === 'sender' && styles.roleCardActive]}
+                  onPress={() => setSignupRole('sender')}
+                  activeOpacity={0.85}
+                >
+                  <View style={[styles.roleIcon, signupRole === 'sender' && styles.roleIconActive]}>
+                    <Ionicons name="cube-outline" size={20} color={signupRole === 'sender' ? '#FFFFFF' : OCEAN.sky400} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.roleTitle}>{t('signin.roleSender')}</Text>
+                    <Text style={styles.roleDesc}>{t('signin.roleSenderDesc')}</Text>
+                  </View>
+                  {signupRole === 'sender' && <Ionicons name="checkmark-circle" size={20} color={OCEAN.sky400} />}
+                </TouchableOpacity>
+
+                {/* CNI obligatoire pour le compte voyageur */}
+                {signupRole === 'traveler' && (
+                  <View style={styles.cniBox}>
+                    <Text style={styles.label}>{t('signin.cni')}</Text>
+                    <Field icon="id-card-outline" value={signupCni} onChangeText={setSignupCni} placeholder={t('signin.cniPh')} keyboardType="number-pad" />
+                    <Text style={styles.cniHint}>{t('signin.cniHint')}</Text>
+                  </View>
+                )}
+
                 <Text style={styles.label}>{t('signin.fullName')}</Text>
                 <Field icon="person-outline" value={signupName} onChangeText={setSignupName} placeholder={t('signin.fullNamePh')} />
 
@@ -459,6 +514,22 @@ const styles = StyleSheet.create({
   contactSection: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.18)' },
   contactTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   contactTitle: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', letterSpacing: 0.3 },
+  // Cartes de choix du statut (voyageur / expéditeur) à l'inscription.
+  roleCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 12, padding: 12, marginBottom: 8,
+  },
+  roleCardActive: { borderColor: OCEAN.sky400, backgroundColor: 'rgba(92,134,255,0.18)' },
+  roleIcon: {
+    width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  roleIconActive: { backgroundColor: OCEAN.brand500 },
+  roleTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  roleDesc: { color: 'rgba(255,255,255,0.65)', fontSize: 12, marginTop: 2 },
+  cniBox: { marginTop: 4, marginBottom: 4 },
+  cniHint: { color: 'rgba(255,255,255,0.55)', fontSize: 11, lineHeight: 15, marginTop: 6 },
   footerToggle: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 22, gap: 6 },
   footerToggleText: { color: '#CBD5E1', fontSize: 13, fontWeight: '600' },
   footerLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

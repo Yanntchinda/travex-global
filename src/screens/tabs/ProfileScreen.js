@@ -8,7 +8,7 @@ import { Stars } from '../../components/common';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
-import {updateUser, getRatings, fetchUserAnnouncements } from '../../services/supabase';
+import {updateUser, getRatings, fetchUserAnnouncements, verificationState, refreshVerification, VERIF_DELAY_MS } from '../../services/supabase';
 import { APP } from '../../config';
 import AppModal from '../../components/AppModal';
 
@@ -20,7 +20,23 @@ export default function ProfileScreen({ navigation }) {
   const [liveRating, setLiveRating] = useState({ average: 0, count: 0 });
   // Compteurs réels : nombre d'annonces (départs / demandes) du compte connecté.
   const [liveCounts, setLiveCounts] = useState({ voyages: 0, demandes: 0 });
+  // Compte à rebours de vérification du compte voyageur.
+  const [tick, setTick] = useState(0);
   const stats = { voyages: liveCounts.voyages, demandes: liveCounts.demandes, note: liveRating.count ? liveRating.average : (user?.stats?.note || 0) };
+
+  // Bascule automatique « vérifié » quand le délai simulé est écoulé +
+  // rafraîchit le compte à rebours chaque seconde.
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setTick((x) => x + 1);
+      if (user) {
+        refreshVerification(user)
+          .then((u) => { if (u !== user) setUser(u); })
+          .catch(() => {});
+      }
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [user]);
 
   // Le score affiché sur le profil réagit en temps réel aux nouveaux avis reçus.
   const loadRating = useCallback(async () => {
@@ -57,6 +73,7 @@ export default function ProfileScreen({ navigation }) {
 
   const MENU = [
     { icon: 'person-outline', label: t('profile.personal'), screen: 'PersonalInfo' },
+    { icon: 'swap-horizontal-outline', label: t('profile.changeStatus'), screen: 'ChangeStatus' },
     { icon: 'wallet-outline', label: t('profile.payment'), screen: 'Payment' },
     { icon: 'notifications-outline', label: t('profile.notif'), screen: 'NotificationSettings' },
     { icon: 'language-outline', label: t('profile.lang'), screen: 'Language' },
@@ -91,6 +108,10 @@ export default function ProfileScreen({ navigation }) {
     setShowLogout(false);
     await signOut();
   };
+
+  // Statut du compte (voyageur vérifié / en cours / expéditeur) + compte à rebours.
+  const st = verificationState(user);
+  const secondsLeft = Math.max(0, Math.ceil(((Number(user?.cniSubmittedAt) || Number(user?.createdAt) || 0) + VERIF_DELAY_MS - Date.now()) / 1000));
 
   if (!user) {
     return (
@@ -164,17 +185,35 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Bandeau vérification */}
-      <View style={styles.banner}>
+      {/* Bandeau de STATUT : voyageur vérifié / en cours / expéditeur.
+          Règle : seul un voyageur VÉRIFIÉ peut publier un départ ; les
+          expéditeurs publient des demandes de colis et peuvent changer de
+          statut (références + CNI) depuis cet écran. */}
+      <View style={[styles.banner, st.phase === 'ok' && styles.bannerOk, (st.phase === 'pending' || st.phase === 'ready') && styles.bannerPending, st.phase === 'sender' && styles.bannerSender]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <Ionicons name="warning-outline" size={22} color="#B7791F" />
-          <Text style={styles.bannerText}>
-            {user?.verificationPending ? t('profile.banner.todo') : user?.verified ? t('profile.banner.done') : t('profile.banner.none')}
+          <Ionicons
+            name={st.phase === 'ok' ? 'shield-checkmark' : (st.phase === 'pending' || st.phase === 'ready') ? 'hourglass-outline' : 'cube-outline'}
+            size={22}
+            color={st.phase === 'ok' ? '#1E7A46' : (st.phase === 'pending' || st.phase === 'ready') ? '#B7791F' : colors.primary}
+          />
+          <Text style={[styles.bannerText, st.phase === 'ok' && { color: '#1E7A46' }, (st.phase === 'pending' || st.phase === 'ready') && { color: '#8A5B12' }]}>
+            {st.phase === 'ok'
+              ? t('profile.statusOk')
+              : (st.phase === 'pending' || st.phase === 'ready')
+                ? `${t('profile.statusPending')} (${secondsLeft}s)`
+                : t('profile.statusSender')}
           </Text>
         </View>
-        <TouchableOpacity style={styles.verifyBtn} onPress={() => Alert.alert(t('profile.settings'), t('profile.banner.todo'))}>
-          <Text style={styles.verifyText}>{t('profile.verify')}</Text>
-        </TouchableOpacity>
+        {st.phase === 'sender' && (
+          <TouchableOpacity style={styles.verifyBtn} onPress={() => navigation.navigate('ChangeStatus')}>
+            <Text style={styles.verifyText}>{t('profile.becomeTraveler')}</Text>
+          </TouchableOpacity>
+        )}
+        {(st.phase === 'pending' || st.phase === 'ready') && (
+          <TouchableOpacity style={styles.verifyBtn} onPress={() => navigation.navigate('ChangeStatus')}>
+            <Text style={styles.verifyText}>{t('publish.refresh')}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Menu */}
@@ -261,10 +300,17 @@ const styles = StyleSheet.create({
     marginHorizontal: '5%', marginTop: -16, borderRadius: radius.md, padding: spacing.md,
     borderWidth: 1, borderColor: '#F0DFB2', zIndex: 2, ...shadow.card,
   },
+  // Variantes du bandeau de statut.
+  bannerOk: { backgroundColor: '#EAF7EE', borderColor: '#BFE3CC' },
+  bannerPending: { backgroundColor: '#FCF3DF', borderColor: '#F0DFB2' },
+  bannerSender: { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' },
   bannerText: { color: '#8A5B12', fontWeight: '600', fontSize: 14, marginLeft: 8 },
   verifyBtn: { backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: 8, borderRadius: 20 },
   verifyText: { color: colors.white, fontWeight: '700', fontSize: 13 },
-  menu: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: spacing.xxl },
+  // paddingBottom généreux : les dernières lignes du menu (ex. « Se déconnecter »)
+  // doivent pouvoir défiler AU-DESSUS de la barre d'onglets flottante (~110 px),
+  // sinon elles restent cliquables-sous-la-barre (clics interceptés).
+  menu: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: 170 },
   menuRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     padding: spacing.lg, borderRadius: radius.md, marginBottom: spacing.sm, ...shadow.card,
