@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   sectionHead: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.primaryDark, marginLeft: 8 },
   rowCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: radius.md, padding: spacing.lg,
   },
   rowTitle: { fontSize: 15, fontWeight: '700', color: colors.text },

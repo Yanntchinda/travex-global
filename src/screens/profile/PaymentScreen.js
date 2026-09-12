@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   title: { fontSize: 18, fontWeight: '700', color: colors.primaryDark, marginBottom: spacing.md },
   option: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
   },
   iconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.inputBg, alignItems: 'center', justifyContent: 'center' },

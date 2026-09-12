@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   bellBadgeText: { color: colors.white, fontSize: 10, fontWeight: '900' },
   slideDots: { position: 'absolute', bottom: spacing.md, alignSelf: 'center', flexDirection: 'row', gap: 6 },
   slideDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.5)' },
-  slideDotActive: { backgroundColor: colors.white, width: 18 },
+  slideDotActive: { backgroundColor: '#FFFFFF', width: 18 }, // point du slider héros : blanc fixe (sur photo sombre)
   tabs: {
     flexDirection: 'row', marginHorizontal: '5%', marginTop: spacing.md,
     backgroundColor: colors.card, borderRadius: 30, padding: 5, ...shadow.card,
@@ -317,13 +317,13 @@ const styles = StyleSheet.create({
   },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: colors.card, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     padding: spacing.lg, paddingBottom: spacing.xxl,
   },
   sheetHandle: { width: 44, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.lg },
   sheetTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: spacing.lg },
   option: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm,
     borderWidth: 1, borderColor: colors.border,
   },

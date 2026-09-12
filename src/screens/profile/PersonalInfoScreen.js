@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   label: { fontSize: 14, color: colors.text, fontWeight: '600', marginBottom: spacing.md },
   avatarRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card,
   },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },

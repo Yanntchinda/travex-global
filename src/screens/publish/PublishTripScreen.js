@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   },
   errorText: { flex: 1, color: colors.red, fontSize: 13, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.5)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  successCard: { width: '100%', maxWidth: 360, backgroundColor: colors.white, borderRadius: 24, padding: spacing.xl, alignItems: 'center', ...shadow.card },
+  successCard: { width: '100%', maxWidth: 360, backgroundColor: colors.card, borderRadius: 24, padding: spacing.xl, alignItems: 'center', ...shadow.card },
   successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center' },
   successTitle: { fontSize: 18, fontWeight: '900', color: colors.text, marginTop: spacing.md, textAlign: 'center' },
   successBody: { fontSize: 14, color: colors.text, marginTop: spacing.sm, lineHeight: 20, textAlign: 'center' },

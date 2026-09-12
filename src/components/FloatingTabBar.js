@@ -168,8 +168,6 @@ const styles = StyleSheet.create({
   label: { fontSize: 11, marginTop: 4 },
   indicator: {
     position: 'absolute', top: 0, left: 0, zIndex: 20,
-    shadowColor: '#0043E0', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35,
-    shadowRadius: 14, elevation: 12,
   },
   indicatorFill: {
     width: '100%', height: '100%', borderRadius: 999,

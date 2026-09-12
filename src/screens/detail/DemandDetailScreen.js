@@ -294,11 +294,11 @@ const styles = StyleSheet.create({
   verifiedChip: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10 },
   verifiedChipText: { color: '#059669', fontSize: 11, fontWeight: '800' },
   actionBar: {
-    flexDirection: 'row', padding: spacing.lg, backgroundColor: colors.white,
+    flexDirection: 'row', padding: spacing.lg, backgroundColor: colors.card,
     borderTopWidth: 1, borderTopColor: colors.border,
   },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '88%' },
+  sheet: { backgroundColor: colors.card, borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '88%' },
   sheetHandle: { width: 44, height: 5, borderRadius: 3, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.sm, marginTop: spacing.sm },
   sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   sheetHeadTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },

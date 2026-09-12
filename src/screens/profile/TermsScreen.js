@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
   },
   introText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 21 },
   section: {
-    backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.lg,
+    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.primaryDark, marginBottom: spacing.sm },

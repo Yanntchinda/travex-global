@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   title: { color: colors.white, fontSize: 24, fontWeight: '800', letterSpacing: 1, marginTop: spacing.sm },
   subtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 14, marginTop: 4 },
   bottom: {
-    backgroundColor: colors.white, borderRadius: radius.xl, padding: spacing.xl,
+    backgroundColor: colors.card, borderRadius: radius.xl, padding: spacing.xl,
     ...shadow.card, marginBottom: spacing.lg,
   },
   chooseTitle: { fontSize: 19, fontWeight: '800', color: colors.text },
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm,
     borderWidth: 1, borderColor: colors.border,
   },
-  btnIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  btnIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   btnTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   btnSub: { fontSize: 13, color: colors.muted, marginTop: 2 },
 });

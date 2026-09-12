@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
   item: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm,
     borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   time: { fontSize: 12, color: colors.muted, marginTop: 4 },
   dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.accent, marginLeft: spacing.sm },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  detailCard: { width: '100%', maxWidth: 380, backgroundColor: colors.white, borderRadius: 24, padding: spacing.xl, alignItems: 'center' },
+  detailCard: { width: '100%', maxWidth: 380, backgroundColor: colors.card, borderRadius: 24, padding: spacing.xl, alignItems: 'center' },
   detailIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   detailTitle: { fontSize: 18, fontWeight: '900', color: colors.text, marginTop: spacing.md, textAlign: 'center' },
   detailBody: { fontSize: 14, color: colors.text, marginTop: spacing.sm, lineHeight: 21, textAlign: 'center' },

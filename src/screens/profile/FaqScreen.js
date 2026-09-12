@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: spacing.xxl },
   item: {
-    backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.lg,
+    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
   qRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

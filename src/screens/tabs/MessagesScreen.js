@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '800', color: colors.primaryDark, paddingHorizontal: '5%', paddingVertical: spacing.md },
   list: { paddingHorizontal: '5%', paddingTop: 0, paddingBottom: spacing.lg },
   convo: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm, ...shadow.card,
   },
   convoAvatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
@@ -375,11 +375,11 @@ const styles = StyleSheet.create({
   callEventTime: { fontSize: 11, color: colors.muted },
   bubble: { maxWidth: '78%', borderRadius: 18, padding: spacing.md, marginBottom: spacing.sm },
   bubbleMe: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 },
-  bubbleThem: { alignSelf: 'flex-start', backgroundColor: colors.white, borderBottomLeftRadius: 4, ...shadow.card },
+  bubbleThem: { alignSelf: 'flex-start', backgroundColor: colors.card, borderBottomLeftRadius: 4, ...shadow.card },
   bubbleText: { fontSize: 15, color: colors.text, lineHeight: 21 },
   bubbleTime: { fontSize: 11, color: colors.muted, marginRight: 4 },
   bubbleMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border },
+  inputRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border },
   input: { flex: 1, backgroundColor: colors.inputBg, borderRadius: 22, paddingHorizontal: spacing.lg, height: 46, fontSize: 15, color: colors.text },
   sendBtn: { marginLeft: spacing.sm, width: 46, height: 46, borderRadius: 23, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
 });

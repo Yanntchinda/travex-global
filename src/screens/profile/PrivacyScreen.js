@@ -55,13 +55,13 @@ const styles = StyleSheet.create({
   introText: { fontSize: 14, color: colors.text, lineHeight: 21, marginTop: 4 },
   updated: { fontSize: 12, color: colors.muted, marginTop: 8, fontStyle: 'italic' },
   section: {
-    backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.lg,
+    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.primaryDark, marginBottom: spacing.sm },
   sectionBody: { fontSize: 14, color: colors.text, lineHeight: 22 },
   contact: {
-    flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.white,
+    flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.card,
     borderRadius: radius.md, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
   contactTitle: { fontSize: 15, fontWeight: '700', color: colors.primaryDark, marginBottom: 4 },

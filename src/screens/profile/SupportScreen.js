@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.primaryDark, marginLeft: 8 },
   subtitle: { fontSize: 14, color: colors.muted, lineHeight: 21, marginBottom: spacing.md },
   channel: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm,
   },
   iconBox: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.inputBg, alignItems: 'center', justifyContent: 'center' },

@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   btnOutline: {
     borderWidth: 1.5,
     borderColor: colors.primary,
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
   },
   btnText: {
     fontSize: 16,

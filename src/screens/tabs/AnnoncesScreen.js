@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 14, color: colors.text },
   tabTextActive: { color: colors.primary, fontWeight: '700' },
   list: { paddingHorizontal: '5%', paddingVertical: spacing.lg },
-  card: { backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm, ...shadow.card },
+  card: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm, ...shadow.card },
   cardHidden: { opacity: 0.75, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.border },
   iconBox: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   route: { fontSize: 16, fontWeight: '700', color: colors.text },

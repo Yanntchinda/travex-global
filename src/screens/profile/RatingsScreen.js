@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   distFill: { height: 8, backgroundColor: colors.star, borderRadius: 4 },
   distCount: { width: 18, fontSize: 13, color: colors.muted, textAlign: 'right' },
   rateCard: {
-    backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.lg,
+    backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg,
     borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
   sectionHead: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },

@@ -220,7 +220,7 @@ export default function SignInScreen({ navigation }) {
           premier plan ; le bas est plus sombre pour la carte de connexion
           (fond blanc plein : contraste garanti dans tous les cas). */}
       <LinearGradient
-        colors={['rgba(2,6,23,0.42)', 'rgba(2,6,23,0.58)', 'rgba(12,74,110,0.72)']}
+        colors={['rgba(2,6,23,0.25)', 'rgba(2,6,23,0.38)', 'rgba(12,74,110,0.55)']}
         style={StyleSheet.absoluteFill}
       />
 
