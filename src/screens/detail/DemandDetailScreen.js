@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CITIES } from '../../data/mockData';
 import AppModal from '../../components/AppModal';
+import AccountRequiredModal from '../../components/AccountRequiredModal';
 
 const DEFAULT_IMG = 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&q=80&w=400';
 
@@ -97,6 +98,9 @@ export default function DemandDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [showProposal, setShowProposal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Invité : consulter la demande est libre, mais PROPOSER ses kilos (écrire
+  // à l'expéditeur) exige un compte.
+  const [needAccount, setNeedAccount] = useState(null);
 
   const load = () => {
     fetchTripDetail(id).then((d) => setDetail(d)).finally(() => setLoading(false));
@@ -222,8 +226,10 @@ export default function DemandDetailScreen({ route, navigation }) {
                 <Text style={styles.senderRating}>{Number(detail.sender.rating || 0).toFixed(1)}</Text>
                 <Text style={styles.senderDeals}> ({Number(detail.sender.dealsCount || 0)} {t('demand.deals')})</Text>
               </View>
-              {/* Demande publiée SANS compte : coordonnées laissées par l'invité */}
-              {!!detail.guestPhone && (
+              {/* Demande publiée SANS compte : coordonnées laissées par l'invité.
+                  Le téléphone n'est visible que des utilisateurs CONNECTÉS —
+                  un visiteur non identifié ne peut pas le récolter. */}
+              {!!detail.guestPhone && user && (
                 <View style={styles.guestContactRow}>
                   <Ionicons name="call-outline" size={13} color="#047857" />
                   <Text style={styles.guestContact}>{detail.guestPhone}</Text>
@@ -231,6 +237,12 @@ export default function DemandDetailScreen({ route, navigation }) {
                     <Ionicons name="person-circle-outline" size={11} color={colors.muted} />
                     <Text style={styles.guestChipText}>{t('publish.guestBadge')}</Text>
                   </View>
+                </View>
+              )}
+              {!!detail.guestPhone && !user && (
+                <View style={styles.guestContactRow}>
+                  <Ionicons name="lock-closed-outline" size={13} color={colors.muted} />
+                  <Text style={styles.guestContactHidden}>{t('demand.contactHidden')}</Text>
                 </View>
               )}
             </View>
@@ -247,8 +259,21 @@ export default function DemandDetailScreen({ route, navigation }) {
       {/* Barre d'action : Fermer + Proposer mes kilos */}
       <View style={styles.actionBar}>
         <Button title={t('demand.close')} variant="outline" onPress={() => navigation.goBack()} style={{ flex: 1, marginRight: spacing.sm }} />
-        <Button title={t('demand.proposeKilos')} icon="hand-left-outline" onPress={() => setShowProposal(true)} style={{ flex: 1.6, marginLeft: spacing.sm }} />
+        <Button
+          title={t('demand.proposeKilos')}
+          icon="hand-left-outline"
+          onPress={() => (user ? setShowProposal(true) : setNeedAccount(t('account.requiredPropose')))}
+          style={{ flex: 1.6, marginLeft: spacing.sm }}
+        />
       </View>
+
+      {/* Invité : proposer exige un compte (la consultation reste libre) */}
+      <AccountRequiredModal
+        visible={!!needAccount}
+        onClose={() => setNeedAccount(null)}
+        onLogin={() => { setNeedAccount(null); navigation.navigate('SignIn'); }}
+        message={needAccount}
+      />
 
       <ProposalModal demand={detail} visible={showProposal} onClose={() => setShowProposal(false)} onSubmit={onPropose} submitting={submitting} />
     </SafeAreaView>
@@ -303,6 +328,7 @@ const styles = StyleSheet.create({
   // Coordonnées d'un expéditeur invité (demande publiée sans compte)
   guestContactRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
   guestContact: { color: '#047857', fontSize: 13, fontWeight: '800' },
+  guestContactHidden: { color: colors.muted, fontSize: 12, fontWeight: '600', fontStyle: 'italic' },
   guestChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: colors.inputBg, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 3,

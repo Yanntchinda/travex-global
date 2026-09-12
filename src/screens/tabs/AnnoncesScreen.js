@@ -58,7 +58,7 @@ export default function AnnoncesScreen({ navigation }) {
                 </View>
                 <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <Badge
-                    label={a.status === 'attente' ? t('publish.pending') : t('publish.verified')}
+                    label={a.status === 'attente' ? t('publish.pending') : t('lists.live')}
                     color={a.status === 'attente' ? '#FCF3DF' : '#ECFDF5'}
                     textColor={a.status === 'attente' ? '#8A5B12' : '#047857'}
                     icon={a.status === 'attente' ? 'time' : 'checkmark-circle'}
@@ -126,7 +126,8 @@ export default function AnnoncesScreen({ navigation }) {
             </View>
             <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <Badge
-                label={a.status === 'attente' ? t('publish.pending') : t('publish.verified')}
+                // Départ validé → « Vérifié » ; demande en ligne → « En ligne ».
+                label={a.status === 'attente' ? t('publish.pending') : (a.isDemande ? t('lists.live') : t('publish.verified'))}
                 color={a.status === 'attente' ? '#FCF3DF' : '#ECFDF5'}
                 textColor={a.status === 'attente' ? '#8A5B12' : '#047857'}
                 icon={a.status === 'attente' ? 'time' : 'checkmark-circle'}

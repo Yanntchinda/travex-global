@@ -10,7 +10,7 @@ import { useLanguage } from '../../context/LanguageContext';
 
 export default function AdminLoginScreen({ navigation }) {
   const { setUser } = useAuth();
-  const { t, setLang } = useLanguage();
+  const { t } = useLanguage();
   const [email, setEmail] = useState(ADMIN_CREDENTIALS.email);
   const [password, setPassword] = useState(ADMIN_CREDENTIALS.password);
   const [loading, setLoading] = useState(false);
@@ -23,9 +23,9 @@ export default function AdminLoginScreen({ navigation }) {
       const { user } = await signIn({ email, password });
       if (user.role !== 'admin') throw new Error(t('admin.token'));
       setUser(user);
-      // L'espace administrateur est forcé en anglais (tout le site traduit).
-      setLang('en');
-      navigation.replace('Admin');
+      // Espace admin : la pile [Main, Admin] permet de revenir à l'application
+      // avec la flèche retour (l'admin n'est jamais « coincé » sur ce dashboard).
+      navigation.reset({ index: 1, routes: [{ name: 'Main' }, { name: 'Admin' }] });
     } catch (e) {
       setError(e.message);
       Alert.alert(t('admin.access'), e.message);
@@ -46,6 +46,7 @@ export default function AdminLoginScreen({ navigation }) {
 
         <Input label={t('auth.email')} icon="mail-outline" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
         <Input label={t('auth.password')} icon="lock-closed-outline" value={password} onChangeText={setPassword} secureTextEntry />
+        <Text style={styles.hint}>{t('signin.adminHint')}</Text>
 
         <Button title={t('auth.loginBtn')} onPress={submit} loading={loading} />
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -60,6 +61,7 @@ const styles = StyleSheet.create({
   iconWrap: { alignSelf: 'center', width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginVertical: spacing.xl },
   title: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
   sub: { fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: spacing.xl, lineHeight: 21 },
+  hint: { fontSize: 12, color: colors.muted, textAlign: 'center', marginBottom: spacing.md, fontStyle: 'italic' },
   errorText: {
     color: colors.red, backgroundColor: '#FDECEC', borderRadius: 12,
     padding: spacing.md, marginTop: spacing.md, textAlign: 'center', fontSize: 14, fontWeight: '600',

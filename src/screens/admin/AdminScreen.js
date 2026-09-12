@@ -10,10 +10,12 @@ import {
   fetchPendingUsers, verifyUser,
 } from '../../services/supabase';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import AppModal from '../../components/AppModal';
 
 export default function AdminScreen({ navigation }) {
   const { t } = useLanguage();
+  const { signOut } = useAuth();
   const [tab, setTab] = useState('annonces'); // 'annonces' | 'profils'
   const [items, setItems] = useState([]);
   const [profiles, setProfiles] = useState([]);
@@ -55,10 +57,20 @@ export default function AdminScreen({ navigation }) {
     loadProfiles();
   };
 
+  // Déconnexion réelle de l'administrateur : retour à l'écran de connexion.
+  const doSignOut = async () => {
+    await signOut();
+    navigation.reset({ index: 0, routes: [{ name: 'SignIn' }] });
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title={t('admin.title')} onBack={() => navigation.goBack()}
-        rightIcon="log-out-outline" onRight={() => navigation.goBack()} />
+      <ScreenHeader
+        title={t('admin.title')}
+        onBack={() => (navigation.canGoBack?.() ? navigation.goBack() : navigation.reset({ index: 0, routes: [{ name: 'Main' }] }))}
+        rightIcon="log-out-outline"
+        onRight={doSignOut}
+      />
 
       {/* Confirmation d'action (in-app) */}
       {flash && (

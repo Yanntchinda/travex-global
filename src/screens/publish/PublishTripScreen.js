@@ -161,9 +161,11 @@ export default function PublishTripScreen({ route, navigation }) {
       capacityKg: Number(weight) || 0,
       categories: isVoyage ? categories : [reqCategory],
       description: description.trim(),
-      // Toute publication part « en attente de vérification » : seul un
-      // administrateur peut faire passer le statut à « vérifié » depuis son dashboard.
-      status: 'attente',
+      // DÉPART : « en attente de vérification » — seul un administrateur peut
+      // le valider (contrôle du billet) depuis son tableau de bord.
+      // DEMANDE d'expédition : publiée IMMÉDIATEMENT (« en ligne »), aucune
+      // vérification requise — y compris pour une publication sans compte.
+      status: isVoyage ? 'attente' : 'confirme',
       isDemande: !isVoyage,
       ticketPhoto: isVoyage ? ticketPhoto : null,
       // Champs demande
@@ -194,7 +196,7 @@ export default function PublishTripScreen({ route, navigation }) {
       await createTrip(ann);
       const msg = isVoyage
         ? `Votre départ ${from} → ${to} (${transport}) du ${fromDate} est en attente de vérification. Un administrateur doit le valider depuis son tableau de bord.`
-        : `Votre demande ${from} → ${to} à réceptionner avant le ${deadline.trim() || date.trim()} est publiée et en attente de vérification par un administrateur.${user ? '' : ` Les voyageurs vous contacteront au ${guestPhone.trim()}.`}`;
+        : `Votre demande ${from} → ${to} à réceptionner avant le ${deadline.trim() || date.trim()} est publiée : elle est en ligne immédiatement, sans vérification.${user ? '' : ` Les voyageurs vous contacteront au ${guestPhone.trim()}.`}`;
       setSuccess({ title: t('publish.ready'), msg });
     } catch (e) {
       setError(e.message);

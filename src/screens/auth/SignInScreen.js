@@ -142,8 +142,9 @@ export default function SignInScreen({ navigation, route }) {
       showToast(t('signin.loginSuccess'), false);
       setTimeout(() => {
         if (user.role === 'admin') {
-          setLang('en');
-          navigation.reset({ index: 0, routes: [{ name: 'Admin' }] });
+          // Espace admin : on garde la pile [Main, Admin] pour que la flèche
+          // retour ramène à l'application (et ne laisse pas l'admin « coincé »).
+          navigation.reset({ index: 1, routes: [{ name: 'Main' }, { name: 'Admin' }] });
         } else {
           navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
         }
@@ -434,6 +435,12 @@ export default function SignInScreen({ navigation, route }) {
           <TouchableOpacity style={styles.guestBtn} onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Main' }] })}>
             <Ionicons name="compass-outline" size={14} color="#94A3B8" />
             <Text style={styles.guestText}>{t('home.guestExplore')}</Text>
+          </TouchableOpacity>
+
+          {/* Accès réservé : espace administrateur (validation des départs) */}
+          <TouchableOpacity style={styles.guestBtn} onPress={() => navigation.navigate('AdminLogin')}>
+            <Ionicons name="shield-checkmark-outline" size={14} color="#94A3B8" />
+            <Text style={styles.guestText}>{t('signin.adminArea')}</Text>
           </TouchableOpacity>
 
           <Text style={styles.footer}>© 2026 TRAVEX GLOBAL. Service sécurisé de transit international.</Text>

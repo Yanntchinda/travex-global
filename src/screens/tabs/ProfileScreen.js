@@ -243,6 +243,17 @@ export default function ProfileScreen({ navigation }) {
           <Ionicons name="chevron-forward" size={20} color={colors.muted} />
         </TouchableOpacity>
 
+        {/* Accès espace administrateur : le propriétaire retrouve son dashboard
+            depuis le profil (sans avoir à se déconnecter d'abord). */}
+        <TouchableOpacity
+          style={[styles.menuRow, styles.adminRow]}
+          onPress={() => navigation.navigate(user?.role === 'admin' ? 'Admin' : 'AdminLogin')}
+        >
+          <Ionicons name="shield-checkmark-outline" size={22} color={colors.primary} />
+          <Text style={styles.menuLabel}>{t('profile.admin')}</Text>
+          <Ionicons name="chevron-forward" size={20} color={colors.muted} />
+        </TouchableOpacity>
+
         <Text style={styles.version}>{t('profile.version')} : {APP.version}</Text>
       </ScrollView>
 
@@ -328,6 +339,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     padding: spacing.lg, borderRadius: radius.md, marginBottom: spacing.sm, ...shadow.card,
   },
+  // Ligne « Espace administrateur » : discrète (fond légèrement bleuté).
+  adminRow: { backgroundColor: colors.primaryLight },
   menuLabel: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '600', marginLeft: spacing.lg },
   version: { textAlign: 'center', color: colors.muted, fontSize: 13, marginTop: spacing.lg },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },

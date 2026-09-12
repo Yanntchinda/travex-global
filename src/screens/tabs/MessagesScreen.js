@@ -255,14 +255,20 @@ export default function MessagesScreen({ navigation, route }) {
   }, [openConvoId, user, openConversation, navigation]);
 
   if (!user) {
+    // Invité : la messagerie (écrire) exige un compte — les voyageurs comme
+    // les demandeurs en ont un pour discuter ; la consultation reste libre.
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Text style={styles.title}>{t('msg.title')}</Text>
         <EmptyState
           icon="chatbubble-ellipses-outline"
           title={t('msg.empty')}
-          subtitle={t('msg.emptyDesc')}
+          subtitle={t('account.requiredContact')}
         />
+        <TouchableOpacity style={styles.guestCta} onPress={() => navigation.navigate('SignIn')}>
+          <Ionicons name="person-add-outline" size={16} color={colors.primary} />
+          <Text style={styles.guestCtaText}>{t('account.loginSignup')}</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -312,6 +318,13 @@ const styles = StyleSheet.create({
   callOverlay: {
     flex: 1, backgroundColor: '#04102B', alignItems: 'center', justifyContent: 'center', padding: spacing.xl,
   },
+  // Bouton « créer un compte » pour l'invité (la messagerie exige un compte)
+  guestCta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    alignSelf: 'center', backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.primary,
+    borderRadius: 24, paddingHorizontal: 20, paddingVertical: 12, marginTop: spacing.lg,
+  },
+  guestCtaText: { color: colors.primary, fontWeight: '800', fontSize: 14 },
   callAvatar: {
     width: 110, height: 110, borderRadius: 55, backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg,

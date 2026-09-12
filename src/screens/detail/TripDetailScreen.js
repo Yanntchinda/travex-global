@@ -11,7 +11,7 @@ import { PAYMENT_MODES, maskPaymentRef, getDemoTravelerMethods } from '../../dat
 import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import Gate from '../../components/Gate';
+import AccountRequiredModal from '../../components/AccountRequiredModal';
 import AppModal from '../../components/AppModal';
 
 function OptionSheet({ visible, onClose, onChoose, t }) {
@@ -58,6 +58,9 @@ export default function TripDetailScreen({ route, navigation }) {
   // l'annonce lui appartient, sinon les modes du voyageur de la démonstration.
   const [payMethods, setPayMethods] = useState([]);
   const [ownTrip, setOwnTrip] = useState(false);
+  // Invité : la consultation des détails est LIBRE, mais toute action d'écriture
+  // (contacter, réserver, noter) exige un compte → modale « compte requis ».
+  const [needAccount, setNeedAccount] = useState(null); // message de la modale
 
   const loadDetail = () => {
     fetchTripDetail(id).then((d) => {
@@ -78,20 +81,9 @@ export default function TripDetailScreen({ route, navigation }) {
 
   if (!detail) return <Loading />;
 
-  // Modèle "transparence" : les détails nécessitent un compte.
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScreenHeader title={t('announce.details')} onBack={() => navigation.goBack()} />
-        <Gate
-          icon="lock-closed-outline"
-          title={t('announce.gate')}
-          subtitle={t('announce.gateDesc')}
-          onLogin={() => navigation.navigate('SignIn')}
-        />
-      </SafeAreaView>
-    );
-  }
+  // Modèle "transparence" : les détails des annonces sont consultables par
+  // TOUT LE MONDE, y compris les visiteurs sans compte. Seules les actions
+  // d'écriture (contacter / réserver / noter) exigent un compte.
 
   const r = detail.route || {
     from: detail.from, to: detail.to,
@@ -110,6 +102,8 @@ export default function TripDetailScreen({ route, navigation }) {
   const safeKg = Math.max(1, Math.min(selKg, Math.max(1, remaining)));
 
   const confirmBook = async () => {
+    // Invité : la réservation (écriture) exige un compte.
+    if (!user) { setNeedAccount(t('account.requiredBook')); return; }
     const kg = safeKg;
     setBooking(true);
     try {
@@ -129,6 +123,8 @@ export default function TripDetailScreen({ route, navigation }) {
   };
 
   const submitRating = async () => {
+    // Invité : noter (écriture) exige un compte.
+    if (!user) { setNeedAccount(t('account.requiredRate')); return; }
     if (!ratingValue) {
       Alert.alert(t('rate.title'), t('rate.hint'));
       return;
@@ -152,6 +148,8 @@ export default function TripDetailScreen({ route, navigation }) {
 
   // Ouvre une conversation persistée avec le transporteur puis ouvre CE chat dans Messages.
   const openContact = async () => {
+    // Invité : écrire au voyageur exige un compte (la consultation est libre).
+    if (!user) { setNeedAccount(t('account.requiredContact')); return; }
     if (traveler) {
       const convo = await ensureConversation({
         name: traveler.name || 'Voyageur',
@@ -188,6 +186,17 @@ export default function TripDetailScreen({ route, navigation }) {
       <ScreenHeader title={t('announce.details')} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Bandeau invité : consultation libre, écriture après création de compte */}
+        {!user && (
+          <TouchableOpacity style={styles.guestBanner} activeOpacity={0.85} onPress={() => navigation.navigate('SignIn')}>
+            <Ionicons name="eye-outline" size={18} color={colors.primary} />
+            <View style={{ flex: 1, marginLeft: spacing.sm }}>
+              <Text style={styles.guestBannerTitle}>{t('detail.guestBanner')}</Text>
+              <Text style={styles.guestBannerDesc}>{t('detail.guestBannerDesc')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+          </TouchableOpacity>
+        )}
         {/* Transporteur — carte cliquable : ouvre le profil du voyageur */}
         <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={openTravelerProfile}>
           <View style={styles.travelerRow}>
@@ -380,6 +389,14 @@ export default function TripDetailScreen({ route, navigation }) {
 
       <OptionSheet visible={sheet} onClose={() => setSheet(false)} onChoose={onOption} t={t} />
 
+      {/* Invité : action bloquée (contacter / réserver / noter) → compte requis */}
+      <AccountRequiredModal
+        visible={!!needAccount}
+        onClose={() => setNeedAccount(null)}
+        onLogin={() => { setNeedAccount(null); navigation.navigate('SignIn'); }}
+        message={needAccount}
+      />
+
       {/* Confirmation de réservation in-app */}
       <AppModal transparent visible={!!bookedInfo} animationType="fade" onRequestClose={() => setBookedInfo(null)}>
         <TouchableOpacity style={styles.bookOverlay} activeOpacity={1} onPress={() => setBookedInfo(null)}>
@@ -402,6 +419,14 @@ export default function TripDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: spacing.xxl },
+  // Bandeau invité (consultation libre / écriture avec compte)
+  guestBanner: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.primaryLight, borderRadius: radius.md,
+    padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
+  },
+  guestBannerTitle: { fontSize: 13.5, fontWeight: '800', color: colors.primaryDark },
+  guestBannerDesc: { fontSize: 12, color: colors.text, marginTop: 2, lineHeight: 17 },
   card: {
     backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
