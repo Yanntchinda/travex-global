@@ -160,6 +160,6 @@ eas.json               -> config builds (APK / iOS / production)
 
 - Le mode démo conserve les données **localement** sur l'appareil (AsyncStorage) : idéal pour tester sans internet.
 - **Notifications push** : Android (FCM) est codé et actif ; iOS attend un compte développeur Apple — procédure dans [`PUSH-NOTIFICATIONS.md`](PUSH-NOTIFICATIONS.md).
-- **Vérifications automatiques** : `npm run check` exécute 71 contrôles sur le code réel (statuts de suivi, PIN de livraison, diffusion aux comptes vérifiés CNI, aperçu limité visiteur, 3 photos de CNI visibles et téléchargeables côté admin).
+- **Vérifications automatiques** : `npm run check` exécute 76 contrôles sur le code réel (statuts de suivi, PIN de livraison, diffusion aux comptes vérifiés CNI, aperçu limité visiteur, 3 photos de CNI visibles et téléchargeables côté admin).
 - Certificat de signature Android/iOS et clés de compte développeur : à fournir personnellement lors de la publication officielle.
 - Le logo/icône TRAVEX GLOBAL est génératif ; remplacez `assets/icon.png` par votre logo définitif si besoin.

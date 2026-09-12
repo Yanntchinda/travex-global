@@ -423,6 +423,42 @@ const nav = { goBack() {}, navigate() {}, addListener: () => () => {} };
     assert.ok(allText(st).includes('Les 3 photos sont obligatoires'), allText(st).slice(0, 400));
   });
 
+  // 7. écran ADMIN réel : onglet « Profils à vérifier » → fiche → documents
+  const AdminScreen = require(path.join(SRC, 'screens/admin/AdminScreen')).default;
+  await AS.default.clear();
+  await AS.default.setItem('travex.users', JSON.stringify([
+    { ...newUser, id: 'u_admin_test', verificationPending: true, verified: false },
+  ]));
+  await setSession({ id: 'admin_1', email: 'admin@travexglobal.com', role: 'admin', verified: true });
+  const admin = await render(withProviders(React.createElement(AdminScreen, { navigation: nav })));
+  const profTab = touchables(admin, 'Profils à vérifier')[0];
+  await TestRenderer.act(async () => { profTab.props.onPress(); await flush(); });
+  check('l’onglet « Profils à vérifier » liste le compte déposé', () => {
+    assert.ok(allText(admin).includes('Marie  Ngo') || allText(admin).includes('marie@travex.cm'), allText(admin).slice(0, 300));
+  });
+  const openProfile = touchables(admin, 'Voir les références')[0];
+  await TestRenderer.act(async () => { openProfile.props.onPress(); await flush(); });
+  check('la fiche profil affiche la section « Documents d’identité »', () => {
+    assert.ok(allText(admin).includes('Documents d\u2019identit\u00e9'), allText(admin).slice(0, 400));
+  });
+  check('la fiche profil montre les 3 photos (recto, verso, selfie)', () => {
+    ['front', 'back', 'selfie'].forEach((k) => {
+      assert.strictEqual(byTestId(admin, 'cniDoc-' + k).length, 1, 'manque cniDoc-' + k);
+    });
+  });
+  check('la fiche profil ne mentionne aucun numéro de CNI', () => {
+    assert.ok(!allText(admin).includes('Numéro de CNI'), allText(admin).slice(0, 300));
+  });
+  EFS.__writes.length = 0;
+  Sharing.__shared.length = 0;
+  const adminDl = byTestId(admin, 'cniDownload-front')[0];
+  await TestRenderer.act(async () => { adminDl.props.onPress(); await flush(); });
+  check('depuis la fiche admin, « Télécharger » produit bien un fichier', () => {
+    assert.strictEqual(EFS.__writes.length, 1);
+    assert.ok(/CNI-marie-front\.png$/.test(Sharing.__shared[0].url), Sharing.__shared[0].url);
+    assert.ok(demo.DEMO_CNI_DOCS.front.endsWith(EFS.__writes[0].contents));
+  });
+
   // ---------- bilan ----------
   console.log('\n' + '-'.repeat(56));
   if (failures.length) {
