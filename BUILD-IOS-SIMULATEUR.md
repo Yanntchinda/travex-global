@@ -7,12 +7,25 @@
 > provisionnement**. Ce n'est qu'au moment de tester sur un **vrai iPhone** ou de
 > publier sur l'App Store que le compte payant devient nécessaire.
 
+> 🖥️ **Prérequis matériel — à lire avant de builder :**
+> - **Construire** le build iOS simulateur : possible depuis **n'importe quel OS**
+>   (Windows, Linux, macOS) — la compilation se fait sur les serveurs d'Expo.
+> - **Installer et lancer** ce build : **un Mac avec Xcode est obligatoire**.
+>   Le simulateur iOS n'existe que sur macOS ; il est fourni par Xcode.
+>   Sur Windows ou Linux, le fichier `.app` produit ne peut être ni installé ni lancé.
+>
+> Sans Mac, la voie de test réelle est l'**APK Android** (`npm run build:apk`).
+
 ---
 
-## Option A — EAS Build (recommandée, sans Mac) ☁️
+## Option A — EAS Build dans le cloud (recommandée) ☁️
 
-Le build tourne sur les serveurs d'Expo. Vous récupérez un fichier `.app`
-à glisser dans le simulateur. **Aucun certificat Apple requis.**
+Le build tourne sur les serveurs d'Expo (donc **pas besoin de Mac pour le
+compiler**), puis vous récupérez un fichier `.app` à glisser dans le simulateur.
+**Aucun certificat Apple requis.**
+
+> Le `.app` ne s'installe que sur un **Mac** (Xcode + Simulator). Lancer le build
+> depuis Windows ne sert à rien si vous n'avez pas accès à un Mac ensuite.
 
 ### 1. Préparer le simulateur (une seule fois, sur votre Mac)
 
@@ -63,6 +76,28 @@ xcrun simctl launch booted com.travexglobal.app
 
 **Ou tout simplement :** glisser-déposer le fichier `.app` extrait sur la
 fenêtre du simulateur ouvert. 🎉
+
+### Variante : depuis la page web « Build from GitHub » (expo.dev)
+
+Sans terminal, sur https://expo.dev → votre projet → **Builds** →
+**Build from GitHub** :
+
+| Champ | Valeur |
+|---|---|
+| GitHub repository | `Yanntchinda/travex-global` |
+| Base directory | **vide** |
+| Platform | **iOS** |
+| Git ref | **`arena/01a0966d-travex-global`** (⚠️ pas `main` : cette branche ne contient pas le code actuel) |
+| EAS Build profile | **`preview-ios`** |
+| EAS Submit | désactivé |
+
+> ⚠️ La page affiche un bandeau « Configure credentials before building » dès que
+> la plateforme iOS est choisie. Pour un profil **simulateur**, aucune donnée
+> Apple n'est exigée (EAS répond littéralement *« A simulator distribution does
+> not require credentials to be configured »*). Je n'ai pas pu vérifier le
+> comportement de cette page web depuis cet environnement : si elle refuse de
+> lancer le build, passez par le terminal (`npm run build:ios-sim`), où
+> l'absence d'identifiants Apple est documentée et effective.
 
 ---
 
@@ -161,7 +196,7 @@ npm run build:apk         # = eas build -p android --profile preview
 
 | Étape | Compte payant Apple (99 €/an) |
 |---|---|
-| Simulateur iOS | ❌ Non nécessaire |
+| Simulateur iOS | ❌ Compte payant non nécessaire — **mais un Mac avec Xcode est obligatoire** |
 | iPhone réel (via TestFlight ou câble) | ✅ Oui |
 | Publication App Store | ✅ Oui |
 
