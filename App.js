@@ -25,6 +25,7 @@ import { LanguageProvider } from './src/context/LanguageContext';
 import { colors } from './src/theme/theme';
 import FloatingTabBar from './src/components/FloatingTabBar';
 import DynamicIsland from './src/components/DynamicIsland';
+import { registerForPush, watchPushNotifications } from './src/services/push';
 
 // Auth — l'app ouvre directement la page de connexion (le choix de langue
 // se fait depuis la pastille de langue de cette page).
@@ -166,6 +167,20 @@ function NotificationIsland() {
   return <DynamicIsland />;
 }
 
+// Push hors application : enregistre le jeton Expo Push du compte connecté
+// (Android/FCM — iOS désactivé tant qu'il n'y a pas de compte Apple) et reflète
+// les notifications reçues dans le fil in-app.
+function PushRegistrar() {
+  const { user } = useAuth();
+  const email = user && user.email;
+  useEffect(() => {
+    const stop = watchPushNotifications();
+    registerForPush();
+    return () => { stop(); };
+  }, [email]);
+  return null;
+}
+
 export default function App() {
   return (
     <SafeAreaProvider initialMetrics={initialMetrics}>
@@ -193,6 +208,8 @@ function AppBody() {
               <RootNavigator />
               {/* Capsule de notification « Dynamic Island » (temps réel, par-dessus l'app) */}
               <NotificationIsland />
+              {/* Jeton push + réception des notifications hors app (Android/FCM) */}
+              <PushRegistrar />
             </View>
       </NavigationContainer>
       <OtaUpdater />

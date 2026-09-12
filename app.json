@@ -40,6 +40,13 @@
     "plugins": [
       "expo-font",
       [
+        "expo-notifications",
+        {
+          "color": "#0043E0",
+          "icon": "./assets/android-icon-monochrome.png"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "TRAVEX GLOBAL accède à vos photos pour ajouter le billet de voyage, la photo du colis ou votre CNI.",

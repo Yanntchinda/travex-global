@@ -25,6 +25,8 @@ const KEY_CONVERSATIONS = 'travex.conversations'; // conversations de messagerie
 const KEY_REPORTS = 'travex.reports'; // signalements d'utilisateurs (preuves + raison)
 const KEY_FAVORITES = 'travex.favoris'; // voyages mis en favori (affichés en premier à l'accueil)
 const KEY_PAYMENT_METHODS = 'travex.paymentMethods'; // modes de paiement enregistrés par l'utilisateur
+const KEY_BROADCASTS = 'travex.broadcasts'; // diffusions reçues, par compte (email → notifications)
+const KEY_PUSH_TOKENS = 'travex.pushTokens'; // jetons Expo Push, par compte (email → token)
 
 // ============ COMPTES PRÉCONFIGURÉS (admin + compte vérifié) ============
 // Accès de test fournis à l'utilisateur.
@@ -425,6 +427,9 @@ export async function createTrip(trip) {
     to: trip.to,
     detail: trip.transport ? trip.transport : `jusqu\u2019au ${trip.deadline || ''}`,
   });
+  // Diffusion à TOUS les comptes vérifiés (CNI validée), sauf l'auteur.
+  const broadcast = await broadcastNewListing(ann, trip.userEmail);
+  ann.broadcastCount = broadcast.count;
   return ann;
 }
 
@@ -553,9 +558,22 @@ export async function verifyUser(id) {
 }
 
 // ---------- Notifications in-app ----------
+// Fusionne les diffusions reçues (publications des autres membres vérifiés)
+// dans le fil de l'utilisateur connecté, sans jamais dupliquer une entrée.
+async function mergeBroadcasts(list) {
+  const me = await getSessionUser();
+  if (!me || !me.email) return list;
+  const inbox = await localStore.get(KEY_BROADCASTS, null);
+  const mine = (inbox && inbox[String(me.email).toLowerCase()]) || [];
+  if (!mine.length) return list;
+  const known = new Set((list || []).map((n) => n.id));
+  const extra = mine.filter((n) => !known.has(n.id));
+  return extra.length ? [...extra, ...(list || [])] : (list || []);
+}
+
 export async function getNotifications() {
   let list = await localStore.get(KEY_NOTIFS, null);
-  if (list) return list;
+  if (list) return mergeBroadcasts(list);
   // Notifications de démonstration pré-remplies.
   list = [
     { id: 'n1', icon: 'checkmark-circle-outline', title_fr: 'Annonce validée', body_fr: 'Votre départ Douala → Genève a été confirmé par un administrateur.', title_en: 'Listing approved', body_en: 'Your departure Douala → Genève was confirmed by an admin.', time: '09:20', read: false },
@@ -563,7 +581,7 @@ export async function getNotifications() {
     { id: 'n3', icon: 'shield-checkmark-outline', title_fr: 'Compte vérifié', body_fr: 'Votre profil a été vérifié avec succès.', title_en: 'Account verified', body_en: 'Your profile was verified successfully.', time: '08:45', read: true },
   ];
   await localStore.set(KEY_NOTIFS, list);
-  return list;
+  return mergeBroadcasts(list);
 }
 
 // Construit une notification normalisée (title_fr/en, body_fr/en, icon, time)
@@ -572,8 +590,8 @@ function buildNotification(d, time) {
   const type = d.type || 'info';
   const icons = {
     proposal: 'chatbubble-ellipses', transit: 'airplane', shipment: 'archive',
-    publish: 'megaphone', status: 'checkmark-circle', message: 'chatbubble',
-    booking: 'cube', info: 'notifications',
+    publish: 'megaphone', newListing: 'megaphone', status: 'checkmark-circle',
+    message: 'chatbubble', booking: 'cube', info: 'notifications',
   };
   const icon = d.icon || icons[type] || 'notifications';
   if (d.title_fr || d.title_en) {
@@ -626,6 +644,15 @@ function buildNotification(d, time) {
         body_en: `${d.name}: "${d.text}"`,
         time: d.time || time,
       };
+    case 'newListing':
+      return {
+        icon,
+        title_fr: d.isDemande ? 'Nouvelle demande de colis 📢' : 'Nouveau départ publié 📢',
+        title_en: d.isDemande ? 'New parcel request 📢' : 'New departure published 📢',
+        body_fr: `${name} · ${d.from} → ${d.to}${d.detail ? ' · ' + d.detail : ''}`,
+        body_en: `${name} · ${d.from} → ${d.to}${d.detail ? ' · ' + d.detail : ''}`,
+        time: d.time || time,
+      };
     case 'publish':
       return {
         icon,
@@ -667,7 +694,9 @@ export async function addNotification(d) {
   const now = new Date();
   const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   const notif = {
-    id: 'n_' + Date.now(),
+    // Un identifiant fourni est conservé : c'est ce qui permet de reconnaître
+    // une diffusion déjà reçue et de ne pas l'afficher deux fois.
+    id: d.id || ('n_' + Date.now()),
     read: false,
     type: d.type || 'info',
     ...buildNotification(d, time),
@@ -689,6 +718,85 @@ export async function markNotificationsRead() {
   const list = await getNotifications();
   await localStore.set(KEY_NOTIFS, list.map((n) => ({ ...n, read: true })));
   return list;
+}
+
+// ---------- Diffusion des publications (comptes vérifiés CNI uniquement) ----------
+// Règle produit : chaque publication (départ ou demande) est notifiée à TOUS les
+// comptes VÉRIFIÉS (CNI validée par un administrateur), sauf à son auteur.
+// En mode DÉMO les destinataires viennent du registre local ; en mode CLOUD cette
+// même fonction lira la table `profiles` (verified = true) — l'appelant ne change pas.
+export async function getVerifiedRecipients() {
+  const users = await localStore.get(KEY_USERS, []);
+  const me = await getSessionUser();
+  const map = new Map();
+  (users || []).forEach((u) => {
+    if (u && u.email && u.verified === true) map.set(String(u.email).toLowerCase(), u);
+  });
+  // Les comptes vérifiés préconfigurés (admin, démo) ne sont pas dans le registre :
+  // on inclut le compte connecté s'il est vérifié, pour que la diffusion soit visible.
+  if (me && me.email && me.verified === true) map.set(String(me.email).toLowerCase(), me);
+  return Array.from(map.values());
+}
+
+// Notifie tous les comptes vérifiés d'une nouvelle publication.
+// Retourne le nombre de destinataires touchés (0 si personne n'est vérifié).
+export async function broadcastNewListing(ann, authorEmail) {
+  const author = String(authorEmail || '').toLowerCase();
+  const recipients = (await getVerifiedRecipients())
+    .filter((u) => String(u.email).toLowerCase() !== author);
+  if (!recipients.length) return { count: 0, notif: null };
+
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const notif = {
+    id: 'b_' + Date.now(),
+    read: false,
+    type: 'newListing',
+    ...buildNotification({
+      type: 'newListing',
+      isDemande: !!ann.isDemande,
+      name: ann.userName || 'Un membre vérifié',
+      from: ann.from,
+      to: ann.to,
+      detail: ann.isDemande
+        ? (ann.deadline ? `avant le ${ann.deadline}` : '')
+        : (ann.fromDate || ann.transport || ''),
+    }, time),
+  };
+
+  // Démo mono-appareil : si le compte connecté est destinataire, la notification
+  // s'affiche immédiatement (cloche + capsule Dynamic Island). On l'écrit AVANT
+  // la boîte de réception : comme l'identifiant est partagé, mergeBroadcasts()
+  // la reconnaît ensuite et ne l'affiche pas deux fois.
+  const me = await getSessionUser();
+  const meIsRecipient = !!(me && me.email && recipients
+    .some((u) => String(u.email).toLowerCase() === String(me.email).toLowerCase()));
+  if (meIsRecipient) await addNotification({ ...notif });
+
+  // Boîte de réception par destinataire : même forme qu'une table Supabase
+  // `notifications (recipient_email, payload, created_at)` à créer pour le cloud.
+  const inbox = await localStore.get(KEY_BROADCASTS, {});
+  recipients.forEach((u) => {
+    const k = String(u.email).toLowerCase();
+    inbox[k] = [notif, ...(inbox[k] || [])].slice(0, 50);
+  });
+  await localStore.set(KEY_BROADCASTS, inbox);
+
+  return { count: recipients.length, notif };
+}
+
+// ---------- Jetons push (Expo Push Service) ----------
+// Android : FCM (gratuit, aucun compte Apple). iOS : clé APNs = compte Apple payant.
+export async function savePushToken(email, token) {
+  if (!email || !token) return null;
+  const map = await localStore.get(KEY_PUSH_TOKENS, {});
+  map[String(email).toLowerCase()] = { token, updatedAt: Date.now() };
+  await localStore.set(KEY_PUSH_TOKENS, map);
+  return map;
+}
+
+export async function getPushTokens() {
+  return await localStore.get(KEY_PUSH_TOKENS, {});
 }
 
 // ---------- Propositions (un voyageur propose ses kilos sur une demande) ----------
