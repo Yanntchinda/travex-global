@@ -41,7 +41,11 @@
     "build:ios-sim": "eas build -p ios --profile preview-ios",
     "prebuild:ios": "expo prebuild --platform ios",
     "ota:publish": "eas update --branch production",
-    "ota:preview": "eas update --branch preview"
+    "ota:preview": "eas update --branch preview",
+    "check": "node scripts/check/run.js"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "react-test-renderer": "^19.2.3"
+  }
 }

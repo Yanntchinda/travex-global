@@ -105,6 +105,8 @@ export const SUPABASE_ANON_KEY = 'eyJ...';
 
 Relancez l'app : l'authentification et les annonces passent en mode réel. *(Le mode démo bascule automatiquement dès que les deux valeurs sont remplies.)*
 
+> 📄 **Notifications & diffusion** : exécutez ensuite [`SUPABASE-NOTIFICATIONS.sql`](SUPABASE-NOTIFICATIONS.sql) — profils vérifiés (CNI), table `notifications`, `push_tokens` et fonction `notify_verified_new_listing()` qui diffuse chaque publication aux comptes vérifiés.
+
 ---
 
 ## 🧭 Écrans inclus
@@ -153,5 +155,7 @@ eas.json               -> config builds (APK / iOS / production)
 ## ❓ Notes
 
 - Le mode démo conserve les données **localement** sur l'appareil (AsyncStorage) : idéal pour tester sans internet.
+- **Notifications push** : Android (FCM) est codé et actif ; iOS attend un compte développeur Apple — procédure dans [`PUSH-NOTIFICATIONS.md`](PUSH-NOTIFICATIONS.md).
+- **Vérifications automatiques** : `npm run check` exécute 52 contrôles sur le code réel (statuts de suivi, PIN de livraison, diffusion aux comptes vérifiés CNI, aperçu limité visiteur).
 - Certificat de signature Android/iOS et clés de compte développeur : à fournir personnellement lors de la publication officielle.
 - Le logo/icône TRAVEX GLOBAL est génératif ; remplacez `assets/icon.png` par votre logo définitif si besoin.
