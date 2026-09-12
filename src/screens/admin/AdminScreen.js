@@ -11,6 +11,7 @@ import {
 } from '../../services/supabase';
 import { useLanguage } from '../../context/LanguageContext';
 import AppModal from '../../components/AppModal';
+import CniDocsView from '../../components/CniDocsView';
 
 export default function AdminScreen({ navigation }) {
   const { t } = useLanguage();
@@ -224,15 +225,10 @@ export default function AdminScreen({ navigation }) {
                 <Text style={styles.sheetMeta}>{viewUser.phone || '—'}</Text>
                 <Text style={styles.sheetMeta}>{viewUser.location || '—'}</Text>
 
-                <Text style={styles.sheetLine}>{t('admin.cni')}</Text>
-                {viewUser.cniPhoto ? (
-                  <Image source={{ uri: viewUser.cniPhoto }} style={styles.ticketImg} resizeMode="cover" />
-                ) : <Text style={styles.sheetNoImg}>—</Text>}
-
-                <Text style={styles.sheetLine}>{t('admin.cniSelfie')}</Text>
-                {viewUser.cniSelfie ? (
-                  <Image source={{ uri: viewUser.cniSelfie }} style={styles.ticketImg} resizeMode="cover" />
-                ) : <Text style={styles.sheetNoImg}>—</Text>}
+                {/* 3 documents d'identité : recto, verso, selfie avec la CNI.
+                    Visibles en plein écran et téléchargeables. */}
+                <Text style={styles.sheetLine}>{t('admin.docs')}</Text>
+                <CniDocsView user={viewUser} />
               </SV>
             )}
             <View style={styles.sheetActions}>

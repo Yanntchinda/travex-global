@@ -3,6 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mockTrips, tripDetail } from '../data/mockData';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config';
+import { DEMO_CNI_DOCS } from './demoCni';
 
 const CLOUD_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 let supabase = null;
@@ -41,6 +42,20 @@ export const localStore = {
   async remove(key) { try { await AsyncStorage.removeItem(key); } catch {} },
 };
 
+// Les 3 documents d'identité d'un compte, dans l'ordre d'affichage côté admin.
+export function getCniDocs(u) {
+  if (!u) return [];
+  return [
+    { key: 'front', labelKey: 'admin.cniFront', uri: u.cniFront || u.cniPhoto || null },
+    { key: 'back', labelKey: 'admin.cniBack', uri: u.cniBack || null },
+    { key: 'selfie', labelKey: 'admin.cniSelfie', uri: u.cniSelfie || null },
+  ].filter((d) => !!d.uri);
+}
+
+export function hasCniDocs(u) {
+  return getCniDocs(u).length === 3;
+}
+
 // Rôle du compte : 'traveler' (peut publier des départs une fois vérifié) ou
 // 'sender' (expéditeur : publie des demandes de colis, sans CNI).
 function buildUser(p) {
@@ -53,9 +68,11 @@ function buildUser(p) {
     phone: p.phone || '',
     location: p.location || '',
     avatar: p.avatar || null,
-    cniPhoto: p.cniPhoto || null,
+    // 3 documents d'identité (le numéro de CNI n'est plus collecté).
+    // cniPhoto (ancienne version) est repris comme recto pour ne rien perdre.
+    cniFront: p.cniFront || p.cniPhoto || null,
+    cniBack: p.cniBack || null,
     cniSelfie: p.cniSelfie || null,
-    cniNumber: p.cniNumber || null,
     initials: ((p.firstName || 'X')[0] + (p.lastName || 'X')[0]).toUpperCase(),
     verified: false,
     verificationPending: role === 'traveler',
@@ -73,8 +90,8 @@ export async function registerUser(d) {
   if (!d.email || !d.password) throw new Error('E-mail et mot de passe requis.');
   const base = buildUser({
     firstName: d.firstName, lastName: d.lastName, email: d.email,
-    phone: d.phone, location: d.location, cniPhoto: d.cniPhoto, cniSelfie: d.cniSelfie, avatar: d.avatar,
-    role: d.role, cniNumber: d.cniNumber,
+    phone: d.phone, location: d.location, avatar: d.avatar, role: d.role,
+    cniFront: d.cniFront, cniBack: d.cniBack, cniSelfie: d.cniSelfie,
   });
   const users = await localStore.get(KEY_USERS, []);
   users.push(base);
@@ -104,7 +121,9 @@ export async function signIn({ email, password }) {
     const u = {
       id: 'verified_1', firstName: 'Jean', lastName: 'Dupont (vérifié)', email, initials: 'JD',
       avatar: null, verified: true, verificationPending: false, role: 'traveler',
-      cniNumber: 'CNI-DÉMO-0001',
+      cniFront: DEMO_CNI_DOCS.front,
+      cniBack: DEMO_CNI_DOCS.back,
+      cniSelfie: DEMO_CNI_DOCS.selfie,
       stats: { voyages: 1, demandes: 0, note: 5 },
     };
     await localStore.set(KEY_USER, u);
@@ -190,8 +209,8 @@ export async function refreshVerification(user) {
 }
 
 // « Changer de statut » : l'expéditeur (ou l'invité identifié) devient
-// voyageur en fournissant ses références et sa CNI → vérification en cours.
-export async function becomeTraveler({ fullName, phone, location, cniNumber }) {
+// voyageur en téléversant les 3 photos de sa CNI → vérification en cours.
+export async function becomeTraveler({ fullName, phone, location, cniFront, cniBack, cniSelfie }) {
   const cur = (await localStore.get(KEY_USER)) || {};
   const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
   const next = {
@@ -201,7 +220,9 @@ export async function becomeTraveler({ fullName, phone, location, cniNumber }) {
     lastName: parts.slice(1).join(' ') || cur.lastName || '',
     phone: String(phone || cur.phone || '').trim(),
     location: String(location || cur.location || '').trim(),
-    cniNumber: String(cniNumber || '').trim(),
+    cniFront: cniFront || null,
+    cniBack: cniBack || null,
+    cniSelfie: cniSelfie || null,
     cniSubmittedAt: Date.now(),
     verified: false,
     verificationPending: true,
@@ -534,15 +555,17 @@ export async function fetchPendingUsers() {
         id: 'pending_1', firstName: 'Awa', lastName: 'Nkomo', email: 'awa@example.com',
         phone: '+237 6 77 00 00 00', location: 'Yaoundé', verified: false, verificationPending: true,
         initials: 'AN', role: 'user',
-        cniPhoto: 'https://via.placeholder.com/300x180?text=CNI+Awa',
-        cniSelfie: 'https://via.placeholder.com/300x180?text=Awa+CNI',
+        cniFront: DEMO_CNI_DOCS.front,
+        cniBack: DEMO_CNI_DOCS.back,
+        cniSelfie: DEMO_CNI_DOCS.selfie,
       },
       {
         id: 'pending_2', firstName: 'Boris', lastName: 'Talla', email: 'boris@example.com',
         phone: '+237 6 99 00 00 00', location: 'Douala', verified: false, verificationPending: true,
         initials: 'BT', role: 'user',
-        cniPhoto: 'https://via.placeholder.com/300x180?text=CNI+Boris',
-        cniSelfie: 'https://via.placeholder.com/300x180?text=Boris+CNI',
+        cniFront: DEMO_CNI_DOCS.back,
+        cniBack: DEMO_CNI_DOCS.front,
+        cniSelfie: DEMO_CNI_DOCS.selfie,
       },
     ];
     await localStore.set(KEY_USERS, users);

@@ -57,6 +57,14 @@ function stub(pkg, body) {
   fs.writeFileSync(path.join(dir, 'index.js'), body);
 }
 
+function stubFile(pkg, rel, body) {
+  const dir = path.join(NM, pkg);
+  fs.mkdirSync(dir, { recursive: true });
+  const pj = path.join(dir, 'package.json');
+  if (!fs.existsSync(pj)) fs.writeFileSync(pj, JSON.stringify({ name: pkg, version: '0.0.0-stub', main: 'index.js' }));
+  fs.writeFileSync(path.join(dir, rel), body);
+}
+
 const h = `const React = require('react');\nconst h = (n) => { const C = React.forwardRef((p, r) => React.createElement(n, { ...p, ref: r }, p && p.children)); C.displayName = n; return C; };\n`;
 
 stub('react-native', `
@@ -150,13 +158,44 @@ module.exports = { __esModule: true, LinearGradient: (p) => React.createElement(
 `);
 
 stub('expo-image-picker', `
+let result = { canceled: true, assets: [] };
+const calls = [];
 module.exports = {
   __esModule: true,
   MediaTypeOptions: { Images: 'Images' },
-  requestMediaLibraryPermissionsAsync: async () => ({ granted: false }),
-  requestCameraPermissionsAsync: async () => ({ granted: false }),
-  launchImageLibraryAsync: async () => ({ canceled: true, assets: [] }),
-  launchCameraAsync: async () => ({ canceled: true, assets: [] }),
+  __calls: calls,
+  __setResult: (r) => { result = r; },
+  requestMediaLibraryPermissionsAsync: async () => ({ granted: true }),
+  requestCameraPermissionsAsync: async () => ({ granted: true }),
+  launchImageLibraryAsync: async (opts) => { calls.push(opts); return result; },
+  launchCameraAsync: async (opts) => { calls.push(opts); return result; },
+};
+`);
+
+// expo-file-system (API legacy) : écriture base64 + téléchargement, mémorisés
+// pour que les tests puissent vérifier CE QUI est réellement écrit sur disque.
+const fsStub = `
+const writes = [];
+module.exports = {
+  __esModule: true,
+  __writes: writes,
+  cacheDirectory: 'file:///data/user/0/cm.travex/cache/',
+  EncodingType: { UTF8: 'utf8', Base64: 'base64' },
+  writeAsStringAsync: async (uri, contents, options) => { writes.push({ uri, contents, options }); },
+  downloadAsync: async (uri, dest) => ({ uri: dest }),
+};
+`;
+stub('expo-file-system', fsStub);
+stubFile('expo-file-system', 'legacy.js', fsStub);
+
+// expo-sharing : mémorise ce que l'app propose réellement au partage système.
+stub('expo-sharing', `
+const shared = [];
+module.exports = {
+  __esModule: true,
+  __shared: shared,
+  isAvailableAsync: async () => true,
+  shareAsync: async (url, options) => { shared.push({ url, options }); },
 };
 `);
 

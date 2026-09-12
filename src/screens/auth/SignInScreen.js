@@ -7,6 +7,7 @@ import { colors, spacing, radius } from '../../theme/theme';
 import { signIn, registerUser } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import CniUploads, { missingCniFields } from '../../components/CniUploads';
 import AppModal from '../../components/AppModal';
 
 // Palette "océan" de la maquette (fond sombre + accents ciel).
@@ -95,7 +96,9 @@ export default function SignInScreen({ navigation }) {
   const [signupBusy, setSignupBusy] = useState(false);
   // Statut choisi à l'inscription : 'traveler' | 'sender' | null (obligatoire).
   const [signupRole, setSignupRole] = useState(null);
-  const [signupCni, setSignupCni] = useState('');
+  // Les 3 photos de la CNI (recto, verso, selfie avec la CNI en main).
+  // Le numéro de CNI n'est plus demandé.
+  const [signupCni, setSignupCni] = useState({ front: null, back: null, selfie: null });
 
   // Contact (visible ensuite dans le profil de l'utilisateur)
   const [signupPhone, setSignupPhone] = useState('');
@@ -158,7 +161,7 @@ export default function SignInScreen({ navigation }) {
       showToast(t('signin.toastPwdMismatch'), true);
       return;
     }
-    if (signupRole === 'traveler' && !signupCni.trim()) {
+    if (signupRole === 'traveler' && missingCniFields(signupCni).length > 0) {
       showToast(t('signin.cniRequired'), true);
       return;
     }
@@ -181,10 +184,10 @@ export default function SignInScreen({ navigation }) {
         // Statut choisi : voyageur (avec CNI, vérification obligatoire avant
         // de publier un départ) ou expéditeur (demandes de colis uniquement).
         role: signupRole,
-        cniNumber: signupRole === 'traveler' ? signupCni.trim() : null,
-        // CNI simulées pour que le profil passe en "en attente de vérification" (visible côté admin).
-        cniPhoto: 'https://via.placeholder.com/300x180?text=CNI',
-        cniSelfie: 'https://via.placeholder.com/300x180?text=Selfie',
+        // Les 3 documents d'identité téléversés (visibles et téléchargeables côté admin).
+        cniFront: signupRole === 'traveler' ? signupCni.front : null,
+        cniBack: signupRole === 'traveler' ? signupCni.back : null,
+        cniSelfie: signupRole === 'traveler' ? signupCni.selfie : null,
       });
       setUser(user);
       showToast(signupRole === 'traveler' ? t('signin.travelerPendingToast') : t('signin.signupSuccess'), false);
@@ -338,9 +341,8 @@ export default function SignInScreen({ navigation }) {
                 {/* CNI obligatoire pour le compte voyageur */}
                 {signupRole === 'traveler' && (
                   <View style={styles.cniBox}>
-                    <Text style={styles.label}>{t('signin.cni')}</Text>
-                    <Field icon="id-card-outline" value={signupCni} onChangeText={setSignupCni} placeholder={t('signin.cniPh')} keyboardType="number-pad" />
-                    <Text style={styles.cniHint}>{t('signin.cniHint')}</Text>
+                    <Text style={styles.label}>{t('cni.title')}</Text>
+                    <CniUploads dark value={signupCni} onChange={setSignupCni} />
                   </View>
                 )}
 

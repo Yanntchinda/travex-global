@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow } from '../../theme/theme';
 import { ScreenHeader, Input, Button } from '../../components/common';
-import PhotoPicker from '../../components/PhotoPicker';
+import CniUploads, { missingCniFields } from '../../components/CniUploads';
 import { registerUser } from '../../services/supabase';
+import { DEMO_CNI_DOCS } from '../../services/demoCni';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -18,8 +19,8 @@ export default function RegisterScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [cniPhoto, setCniPhoto] = useState(null);
-  const [cniSelfie, setCniSelfie] = useState(null);
+  // Les 3 photos de la CNI (recto, verso, selfie avec la CNI en main).
+  const [cniDocs, setCniDocs] = useState({ front: null, back: null, selfie: null });
   const [accepted, setAccepted] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -30,8 +31,8 @@ export default function RegisterScreen({ navigation }) {
     setPhone('+237 690 00 00 00');
     setEmail('jean.dupont@example.com');
     setPassword('demo1234');
-    setCniPhoto('https://via.placeholder.com/200');
-    setCniSelfie('https://via.placeholder.com/200');
+    // PNG de démonstration : affichables sur mobile ET téléchargeables par l'admin.
+    setCniDocs({ ...DEMO_CNI_DOCS });
   };
 
   const submit = async () => {
@@ -39,8 +40,8 @@ export default function RegisterScreen({ navigation }) {
       Alert.alert('Champs requis', 'Veuillez remplir tous les champs obligatoires (r\u00e9f\u00e9rences).');
       return;
     }
-    if (!cniPhoto || !cniSelfie) {
-      Alert.alert(t('register.identity'), 'Ajoutez votre photo de CNI et la photo de vous tenant votre CNI.');
+    if (missingCniFields(cniDocs).length > 0) {
+      Alert.alert(t('register.identity'), t('cni.required'));
       return;
     }
     if (!accepted) {
@@ -49,7 +50,10 @@ export default function RegisterScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      const user = await registerUser({ firstName, lastName, location, phone, email, password, cniPhoto, cniSelfie });
+      const user = await registerUser({
+        firstName, lastName, location, phone, email, password,
+        cniFront: cniDocs.front, cniBack: cniDocs.back, cniSelfie: cniDocs.selfie,
+      });
       setUser(user);
       // Après inscription réussie : revenir aux onglets principaux (vider la pile de navigation).
       navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
@@ -77,21 +81,8 @@ export default function RegisterScreen({ navigation }) {
         <Input label={t('auth.email')} icon="mail-outline" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
         <Input label={t('auth.password')} icon="lock-closed-outline" value={password} onChangeText={setPassword} secureTextEntry />
 
-        <Text style={styles.section}>{t('register.identity')}</Text>
-        <PhotoPicker
-          label={t('register.cni')}
-          value={cniPhoto}
-          onChange={setCniPhoto}
-          placeholder="Ajouter la photo de la CNI"
-          hint="Face recto de votre carte d\u2019identit\u00e9"
-        />
-        <PhotoPicker
-          label={t('register.cniSelfie')}
-          value={cniSelfie}
-          onChange={setCniSelfie}
-          placeholder="Ajouter la photo avec votre CNI"
-          hint="Visage + CNI visibles pour la v\u00e9rification"
-        />
+        <Text style={styles.section}>{t('cni.title')}</Text>
+        <CniUploads value={cniDocs} onChange={setCniDocs} />
 
         <TouchableOpacity style={styles.checkRow} onPress={() => setAccepted((v) => !v)} activeOpacity={0.8}>
           <Ionicons name={accepted ? 'checkbox' : 'square-outline'} size={22} color={accepted ? colors.primary : colors.muted} />

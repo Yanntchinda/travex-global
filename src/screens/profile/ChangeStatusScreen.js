@@ -8,10 +8,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { becomeTraveler, verificationState, refreshVerification, VERIF_DELAY_MS } from '../../services/supabase';
 import AppModal from '../../components/AppModal';
+import CniUploads, { missingCniFields } from '../../components/CniUploads';
 
 // « Changer de statut » : devenir voyageur pour publier des départs.
-// L'expéditeur renseigne ses références (nom, téléphone, localisation) et son
-// numéro de CNI — TANT QUE le compte n'est pas vérifié, il ne peut publier
+// L'expéditeur renseigne ses références (nom, téléphone, localisation) et
+// téléverse les 3 photos de sa CNI (recto, verso, selfie avec la CNI en main) —
+// TANT QUE le compte n'est pas vérifié, il ne peut publier
 // AUCUN départ (les demandes de colis restent ouvertes à tous).
 // Phase 1 : vérification simulée (~20 s) ; phase 2 : vérification réelle.
 export default function ChangeStatusScreen({ navigation }) {
@@ -21,7 +23,8 @@ export default function ChangeStatusScreen({ navigation }) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
-  const [cni, setCni] = useState('');
+  // Les 3 photos de la CNI (recto, verso, selfie avec la CNI en main).
+  const [cniDocs, setCniDocs] = useState({ front: null, back: null, selfie: null });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
@@ -33,6 +36,11 @@ export default function ChangeStatusScreen({ navigation }) {
       setFullName(`${user.firstName || ''} ${user.lastName || ''}`.trim());
       setPhone(user.phone || '');
       setLocation(user.location || '');
+      setCniDocs({
+        front: user.cniFront || null,
+        back: user.cniBack || null,
+        selfie: user.cniSelfie || null,
+      });
     }
   }, [user?.email]);
 
@@ -70,8 +78,8 @@ export default function ChangeStatusScreen({ navigation }) {
 
   const submit = async () => {
     setError(null);
-    if (!fullName.trim() || !cni.trim()) {
-      setError(t('signin.cniRequired'));
+    if (!fullName.trim() || missingCniFields(cniDocs).length > 0) {
+      setError(t('cni.required'));
       return;
     }
     setBusy(true);
@@ -80,7 +88,9 @@ export default function ChangeStatusScreen({ navigation }) {
         fullName: fullName.trim(),
         phone: phone.trim(),
         location: location.trim(),
-        cniNumber: cni.trim(),
+        cniFront: cniDocs.front,
+        cniBack: cniDocs.back,
+        cniSelfie: cniDocs.selfie,
       });
       setUser(u);
       setDone(true);
@@ -134,9 +144,8 @@ export default function ChangeStatusScreen({ navigation }) {
             <Text style={styles.label}>{t('status.location')}</Text>
             <TextInput style={styles.input} value={location} onChangeText={setLocation} placeholder="Ex. : Yaoundé, Cameroun" placeholderTextColor="#94A3B8" />
 
-            <Text style={styles.label}>{t('status.cni')}</Text>
-            <TextInput style={styles.input} value={cni} onChangeText={setCni} placeholder="Ex : 118745236" placeholderTextColor="#94A3B8" keyboardType="number-pad" />
-            <Text style={styles.hint}>{t('signin.cniHint')}</Text>
+            <Text style={styles.label}>{t('cni.title')}</Text>
+            <CniUploads value={cniDocs} onChange={setCniDocs} />
 
             {error && (
               <View style={styles.errorBanner}>

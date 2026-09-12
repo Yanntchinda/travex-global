@@ -106,6 +106,8 @@ export const SUPABASE_ANON_KEY = 'eyJ...';
 Relancez l'app : l'authentification et les annonces passent en mode réel. *(Le mode démo bascule automatiquement dès que les deux valeurs sont remplies.)*
 
 > 📄 **Notifications & diffusion** : exécutez ensuite [`SUPABASE-NOTIFICATIONS.sql`](SUPABASE-NOTIFICATIONS.sql) — profils vérifiés (CNI), table `notifications`, `push_tokens` et fonction `notify_verified_new_listing()` qui diffuse chaque publication aux comptes vérifiés.
+>
+> 📄 **Pièce d'identité** : exécutez aussi [`SUPABASE-IDENTITE.sql`](SUPABASE-IDENTITE.sql) — 3 colonnes `cni_front` / `cni_back` / `cni_selfie`, table `identity_documents`, bucket privé `cni-documents` et vue `admin_identity_queue` (aucun numéro de CNI).
 
 ---
 
@@ -118,6 +120,8 @@ Relancez l'app : l'authentification et les annonces passent en mode réel. *(Le 
 - **Réservations** (clients / mes), **Mes annonces** (voyages / demandes), **Messages**.
 - **Profil** : en-tête bleu, stats, vérification compte, menu complet.
 - **Sous-écrans profil** : infos personnelles, gestion des paiements, notifications, sécurité (2FA), langue (FR/EN), évaluations, support.
+- **Pièce d'identité** : aucun numéro de CNI n'est demandé — 3 photos téléversées (CNI **recto**, CNI **verso**, **vous tenant votre CNI en main**) à l'inscription et dans « Changer de statut ».
+- **Espace admin** : les 3 documents s'affichent en miniature, s'ouvrent en plein écran et se **téléchargent** (fichier sur web, feuille de partage sur mobile).
 
 ---
 
@@ -156,6 +160,6 @@ eas.json               -> config builds (APK / iOS / production)
 
 - Le mode démo conserve les données **localement** sur l'appareil (AsyncStorage) : idéal pour tester sans internet.
 - **Notifications push** : Android (FCM) est codé et actif ; iOS attend un compte développeur Apple — procédure dans [`PUSH-NOTIFICATIONS.md`](PUSH-NOTIFICATIONS.md).
-- **Vérifications automatiques** : `npm run check` exécute 52 contrôles sur le code réel (statuts de suivi, PIN de livraison, diffusion aux comptes vérifiés CNI, aperçu limité visiteur).
+- **Vérifications automatiques** : `npm run check` exécute 71 contrôles sur le code réel (statuts de suivi, PIN de livraison, diffusion aux comptes vérifiés CNI, aperçu limité visiteur, 3 photos de CNI visibles et téléchargeables côté admin).
 - Certificat de signature Android/iOS et clés de compte développeur : à fournir personnellement lors de la publication officielle.
 - Le logo/icône TRAVEX GLOBAL est génératif ; remplacez `assets/icon.png` par votre logo définitif si besoin.

@@ -295,6 +295,134 @@ const nav = { goBack() {}, navigate() {}, addListener: () => () => {} };
     assert.ok(/\b4\b/.test(allText(home)), allText(home).slice(0, 200));
   });
 
+  // ================= F. Identité : 3 photos de CNI, visibles et téléchargeables
+  suite('F. Identité — 3 photos de CNI (plus de numéro), visibles et téléchargeables');
+  const demo = require(path.join(SRC, 'services/demoCni.js'));
+  const { missingCniFields } = require(path.join(SRC, 'components/CniUploads'));
+  const CniUploads = require(path.join(SRC, 'components/CniUploads')).default;
+  const CniDocsView = require(path.join(SRC, 'components/CniDocsView')).default;
+  const ChangeStatusScreen = require(path.join(SRC, 'screens/profile/ChangeStatusScreen')).default;
+  const EFS = require(path.join(BASE, 'node_modules', 'expo-file-system', 'legacy.js'));
+  const Sharing = require(path.join(BASE, 'node_modules', 'expo-sharing'));
+  const Picker = require(path.join(BASE, 'node_modules', 'expo-image-picker'));
+  // Un testID apparaît sur le composant ET sur son élément hôte : on ne garde
+  // que l'instance composite (celle qui reçoit vraiment onPress).
+  const byTestId = (r, id) => r.root.findAll((n) => n.type === RN.TouchableOpacity && n.props.testID === id);
+
+  await AS.default.clear();
+
+  // 1. inscription d'un voyageur avec les 3 photos téléversées
+  const newUser = await svc.registerUser({
+    firstName: 'Marie', lastName: 'Ngo', email: 'marie@travex.cm', password: 'Motdepasse1',
+    location: 'Yaoundé', phone: '+237 6 00 00 00 00', role: 'traveler',
+    cniFront: demo.DEMO_CNI_DOCS.front, cniBack: demo.DEMO_CNI_DOCS.back, cniSelfie: demo.DEMO_CNI_DOCS.selfie,
+  });
+  check('l’inscription enregistre les 3 photos de la CNI', () => {
+    assert.ok(newUser.cniFront && newUser.cniBack && newUser.cniSelfie);
+  });
+  check('aucun numéro de CNI n’est collecté ni stocké', () => {
+    assert.ok(!('cniNumber' in newUser), 'clés: ' + Object.keys(newUser).join(','));
+  });
+  check('getCniDocs renvoie recto, verso, selfie dans l’ordre', () => {
+    assert.deepStrictEqual(svc.getCniDocs(newUser).map((d) => d.key), ['front', 'back', 'selfie']);
+  });
+  check('un ancien compte avec cniPhoto retrouve son recto', () => {
+    const legacy = svc.getCniDocs({ cniPhoto: 'data:image/png;base64,AAAA' });
+    assert.strictEqual(legacy.length, 1);
+    assert.strictEqual(legacy[0].key, 'front');
+  });
+  check('hasCniDocs exige bien les 3 documents', () => {
+    assert.ok(svc.hasCniDocs(newUser));
+    assert.ok(!svc.hasCniDocs({ cniFront: 'x', cniBack: 'y' }));
+  });
+  check('missingCniFields liste ce qui manque au formulaire', () => {
+    assert.deepStrictEqual(missingCniFields({ front: 'a' }), ['back', 'selfie']);
+  });
+
+  // 2. espace admin : les 3 documents sont affichés
+  const view = await render(withProviders(React.createElement(CniDocsView, { user: newUser })));
+  check('l’admin voit les 3 documents (recto, verso, selfie)', () => {
+    ['front', 'back', 'selfie'].forEach((k) => {
+      assert.strictEqual(byTestId(view, 'cniDoc-' + k).length, 1, 'manque cniDoc-' + k);
+    });
+  });
+  check('chaque document a son bouton « Télécharger »', () => {
+    ['front', 'back', 'selfie'].forEach((k) => {
+      assert.strictEqual(byTestId(view, 'cniDownload-' + k).length, 1, 'manque cniDownload-' + k);
+    });
+  });
+  check('les 3 images sont réellement chargées depuis les documents', () => {
+    const uris = view.root.findAll((n) => n.type === RN.Image && n.props.source && n.props.source.uri)
+      .map((n) => n.props.source.uri);
+    assert.ok(uris.includes(demo.DEMO_CNI_DOCS.front), 'recto absent');
+    assert.ok(uris.includes(demo.DEMO_CNI_DOCS.back), 'verso absent');
+    assert.ok(uris.includes(demo.DEMO_CNI_DOCS.selfie), 'selfie absent');
+  });
+
+  // 3. téléchargement réel : écriture du fichier + feuille de partage système
+  EFS.__writes.length = 0;
+  Sharing.__shared.length = 0;
+  const dlBtn = byTestId(view, 'cniDownload-back')[0];
+  await TestRenderer.act(async () => { dlBtn.props.onPress(); await flush(); });
+  check('« Télécharger » écrit le fichier puis ouvre le partage', () => {
+    assert.strictEqual(EFS.__writes.length, 1, 'écritures: ' + EFS.__writes.length);
+    assert.strictEqual(Sharing.__shared.length, 1, 'partages: ' + Sharing.__shared.length);
+  });
+  check('le fichier écrit contient les octets exacts du verso', () => {
+    const written = EFS.__writes[0];
+    assert.ok(demo.DEMO_CNI_DOCS.back.endsWith(written.contents), 'contenu ≠ base64 du document');
+    assert.strictEqual(written.options.encoding, 'base64');
+  });
+  check('le nom du fichier identifie le compte et le document', () => {
+    assert.ok(/CNI-marie-back\.png$/.test(Sharing.__shared[0].url), Sharing.__shared[0].url);
+  });
+
+  // 4. visionneuse plein écran
+  const openBtn = byTestId(view, 'cniDoc-selfie')[0];
+  await TestRenderer.act(async () => { openBtn.props.onPress(); await flush(); });
+  check('tap sur une miniature → visionneuse plein écran + téléchargement', () => {
+    assert.ok(allText(view).includes('Vous tenant la CNI'), allText(view).slice(0, 200));
+    assert.strictEqual(byTestId(view, 'cniDownload-selfie').length, 1);
+  });
+
+  // 5. téléversement : la photo devient une data URI persistante
+  Picker.__setResult({ canceled: false, assets: [{ uri: 'file:///tmp/pick.jpg', mimeType: 'image/jpeg', base64: 'AAECAwQ=' }] });
+  let picked = null;
+  const up = await render(withProviders(React.createElement(CniUploads, { value: {}, onChange: (v) => { picked = v; } })));
+  check('3 zones de téléversement : recto, verso, selfie', () => {
+    ['front', 'back', 'selfie'].forEach((k) => {
+      assert.strictEqual(byTestId(up, 'cni-' + k).length, 1, 'manque cni-' + k);
+    });
+  });
+  const frontBox = byTestId(up, 'cni-front')[0];
+  await TestRenderer.act(async () => { frontBox.props.onPress(); await flush(); });
+  check('la photo choisie est convertie en data URI (persistante + téléchargeable)', () => {
+    assert.ok(picked && picked.front === 'data:image/jpeg;base64,AAECAwQ=', JSON.stringify(picked));
+  });
+  check('la galerie est ouverte en demandant explicitement le base64', () => {
+    const opts = Picker.__calls[Picker.__calls.length - 1];
+    assert.strictEqual(opts.base64, true);
+  });
+
+  // 6. écran « Changer de statut » : plus aucun champ « numéro de CNI »
+  await AS.default.clear();
+  await setSession({ ...DEMO_VERIFIED, verified: false, verificationPending: false, role: 'sender' });
+  const st = await render(withProviders(React.createElement(ChangeStatusScreen, { navigation: nav })));
+  check('« Changer de statut » ne demande plus de numéro de CNI', () => {
+    assert.ok(!JSON.stringify(st.toJSON()).includes('number-pad'), 'un clavier numérique subsiste');
+    assert.ok(!allText(st).includes('Numéro de CNI'), allText(st).slice(0, 300));
+  });
+  check('« Changer de statut » propose les 3 téléversements', () => {
+    ['front', 'back', 'selfie'].forEach((k) => {
+      assert.strictEqual(byTestId(st, 'cni-' + k).length, 1, 'manque cni-' + k);
+    });
+  });
+  const sendBtn = touchables(st, 'Envoyer pour vérification')[0];
+  await TestRenderer.act(async () => { sendBtn.props.onPress(); await flush(); });
+  check('envoi sans les 3 photos → refus avec le message CNI', () => {
+    assert.ok(allText(st).includes('Les 3 photos sont obligatoires'), allText(st).slice(0, 400));
+  });
+
   // ---------- bilan ----------
   console.log('\n' + '-'.repeat(56));
   if (failures.length) {

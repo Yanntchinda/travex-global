@@ -8,37 +8,52 @@ import { colors, spacing, radius } from '../theme/theme';
 // n'est pas disponible — pour que l'upload (billet, CNI...) reste fonctionnel.
 const WEB_PLACEHOLDER = 'https://via.placeholder.com/300x180?text=TravEx';
 
+// Construit une data URI persistante : contrairement à un URI de fichier local
+// (file:///… ou content://…), elle survit au redémarrage de l'app et peut être
+// affichée puis téléchargée depuis un autre écran (espace admin).
+function toDataUri(asset) {
+  if (!asset) return null;
+  if (asset.base64) {
+    const mime = asset.mimeType || 'image/jpeg';
+    return `data:${mime};base64,${asset.base64}`;
+  }
+  return asset.uri || null;
+}
+
 // Bouton de sélection/téléversement de photo (CNI, billet, etc.)
-export default function PhotoPicker({ label, value, onChange, placeholder = 'Ajouter une photo', hint }) {
+export default function PhotoPicker({ label, value, onChange, placeholder = 'Ajouter une photo', hint, required = false, testID }) {
   const pick = async () => {
-    // Sur le web, on simule un upload (pas de galerie système fiable dans la sandbox).
-    if (Platform.OS === 'web') {
-      onChange(WEB_PLACEHOLDER);
-      return;
-    }
     try {
-      let perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (perm.status !== 'granted') {
-        // Sur desktop on tente quand même via launchImageLibraryAsync
-      }
+      try { await ImagePicker.requestMediaLibraryPermissionsAsync(); } catch (e) { /* web / sandbox */ }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.6,
-        base64: false,
+        // Compression volontaire : 3 documents CNI sont stockés en base64.
+        quality: 0.4,
+        exif: false,
+        base64: true,
       });
       if (!result.canceled && result.assets && result.assets[0]) {
-        onChange(result.assets[0].uri);
+        const uri = toDataUri(result.assets[0]);
+        if (uri) { onChange(uri); return; }
       }
+      // Sélection annulée : on ne touche à rien.
+      if (!result.canceled) onChange(WEB_PLACEHOLDER);
     } catch (e) {
-      // Toute erreur (permission refusée, caméra indisponible...) → photo de démo.
+      // Galerie indisponible (web sans input fichier, permission refusée…) :
+      // on garde le flux utilisable avec une photo de démonstration.
       onChange(WEB_PLACEHOLDER);
     }
   };
 
   return (
     <View style={{ marginBottom: spacing.lg }}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label ? (
+        <Text style={styles.label}>
+          {label}
+          {required ? <Text style={styles.requiredMark}> *</Text> : null}
+        </Text>
+      ) : null}
       {value ? (
         <View style={styles.previewBox}>
           <Image source={{ uri: value }} style={styles.preview} resizeMode="cover" />
@@ -50,7 +65,7 @@ export default function PhotoPicker({ label, value, onChange, placeholder = 'Ajo
           </TouchableOpacity>
         </View>
       ) : (
-        <TouchableOpacity style={styles.emptyBox} onPress={pick} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.emptyBox} onPress={pick} activeOpacity={0.7} testID={testID}>
           <Ionicons name="image-outline" size={28} color={colors.muted} />
           <Text style={styles.emptyText}>{placeholder}</Text>
           {hint && <Text style={styles.hint}>{hint}</Text>}
@@ -62,6 +77,7 @@ export default function PhotoPicker({ label, value, onChange, placeholder = 'Ajo
 
 const styles = StyleSheet.create({
   label: { fontSize: 14, color: colors.text, fontWeight: '600', marginBottom: spacing.sm },
+  requiredMark: { color: colors.red, fontWeight: '800' },
   previewBox: {
     borderRadius: radius.md, overflow: 'hidden',
     borderWidth: 1, borderColor: colors.border, position: 'relative',
