@@ -111,20 +111,6 @@ export async function signIn({ email, password }) {
   throw new Error('Compte introuvable. Créez un compte.');
 }
 
-export async function signInWithGoogle() {
-  return { needsFinalize: true, partial: { firstName: '', lastName: '', email: '' } };
-}
-
-export async function finalizeSignup(partial) {
-  const user = buildUser(partial);
-  const users = await localStore.get(KEY_USERS, []);
-  users.push(user);
-  await localStore.set(KEY_USERS, users);
-  await localStore.set(KEY_USER, user);
-  await localStore.set(KEY_SESSION, 'active');
-  return user;
-}
-
 export async function getSessionUser() {
   const session = await localStore.get(KEY_SESSION);
   if (!session) return null;

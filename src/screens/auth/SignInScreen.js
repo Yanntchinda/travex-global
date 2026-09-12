@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, radius } from '../../theme/theme';
-import { signIn, signInWithGoogle, registerUser } from '../../services/supabase';
+import { signIn, registerUser } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -96,8 +96,9 @@ export default function SignInScreen({ navigation }) {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [signupBusy, setSignupBusy] = useState(false);
 
-  // Google
-  const [googleBusy, setGoogleBusy] = useState(false);
+  // Contact (visible ensuite dans le profil de l'utilisateur)
+  const [signupPhone, setSignupPhone] = useState('');
+  const [signupLocation, setSignupLocation] = useState('');
 
   // Modales
   const [langOpen, setLangOpen] = useState(false);
@@ -179,20 +180,6 @@ export default function SignInScreen({ navigation }) {
       showToast(e.message, true);
     } finally {
       setSignupBusy(false);
-    }
-  };
-
-  const doGoogle = async () => {
-    setGoogleBusy(true);
-    try {
-      const res = await signInWithGoogle();
-      if (res.needsFinalize) {
-        navigation.navigate('Register');
-      } else {
-        showToast(t('signin.toastGoogle'), false);
-      }
-    } finally {
-      setGoogleBusy(false);
     }
   };
 
@@ -316,6 +303,18 @@ export default function SignInScreen({ navigation }) {
                 <Text style={styles.label}>{t('signin.confirmPassword')}</Text>
                 <Field icon="shield-checkmark-outline" value={signupConfirm} onChangeText={setSignupConfirm} placeholder="••••••••" secure rightVisible={showConfirmPwd} rightIcon={showConfirmPwd ? 'eye-off-outline' : 'eye-outline'} onRight={() => setShowConfirmPwd((v) => !v)} />
 
+                {/* Contact — ces informations apparaîtront dans votre profil */}
+                <View style={styles.contactSection}>
+                  <View style={styles.contactTitleRow}>
+                    <Ionicons name="id-card-outline" size={15} color="rgba(255,255,255,0.75)" />
+                    <Text style={styles.contactTitle}>{t('signin.contactSection')}</Text>
+                  </View>
+                  <Text style={styles.label}>{t('signin.phone')}</Text>
+                  <Field icon="call-outline" value={signupPhone} onChangeText={setSignupPhone} placeholder={t('signin.phonePh')} keyboardType="phone-pad" />
+                  <Text style={styles.label}>{t('signin.location')}</Text>
+                  <Field icon="location-outline" value={signupLocation} onChangeText={setSignupLocation} placeholder={t('signin.locationPh')} />
+                </View>
+
                 <View style={styles.termsRow}>
                   <CheckRow checked={acceptTerms} label={t('signin.terms')} onToggle={() => setAcceptTerms((v) => !v)} />
                 </View>
@@ -332,20 +331,6 @@ export default function SignInScreen({ navigation }) {
               </>
             )}
 
-            {/* Divider "Ou continuer avec" */}
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('signin.or')}</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google */}
-            <Pressable style={[styles.googleBtn, googleBusy && { opacity: 0.9 }]} onPress={doGoogle} disabled={googleBusy}>
-              <View style={styles.googleRow}>
-                <Ionicons name="logo-google" size={18} color="#4285F4" />
-                <Text style={styles.googleText}>{googleBusy ? t('signin.googleConnecting') : t('signin.google')}</Text>
-              </View>
-            </Pressable>
           </View>
 
           {/* Lien basculant */}
@@ -472,12 +457,10 @@ const styles = StyleSheet.create({
   ctaFill: { paddingVertical: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: OCEAN.brand500 },
   ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ctaText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 14 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.18)' },
-  dividerText: { marginHorizontal: 12, fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: 0.6 },
-  googleBtn: { backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  googleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  googleText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  // Section « Contact » du formulaire d'inscription (visible dans le profil).
+  contactSection: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.18)' },
+  contactTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  contactTitle: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', letterSpacing: 0.3 },
   footerToggle: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 22, gap: 6 },
   footerToggleText: { color: '#CBD5E1', fontSize: 13, fontWeight: '600' },
   footerLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

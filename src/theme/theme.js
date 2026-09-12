@@ -25,6 +25,7 @@ export const lightColors = {
 // Palette sombre « nuit » — mêmes clés, valeurs adaptées aux fonds foncés.
 export const darkColors = {
   ...lightColors,
+  primaryDark: '#8FB3FF',  // bleu foncé -> bleu ciel (titres de sections lisibles en sombre)
   primaryLight: '#1D2B4D', // bleu très clair -> bleu nuit
   accentLight: '#123733',  // teal clair -> teal nuit
   bg: '#0B1220',           // fond de l'app

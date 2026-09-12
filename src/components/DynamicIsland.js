@@ -154,14 +154,15 @@ const styles = StyleSheet.create({
     position: 'absolute', top: TOP_OFFSET, left: 0, right: 0,
     alignItems: 'center', zIndex: 9999, elevation: 30,
   },
-  // Message avec fond sombre arrondi (contraste garanti), sans rond ni icône.
+  // Message sur pastille BLANCHE avec texte NOIR — identique en mode clair
+  // et sombre (choix demandé), sans rond ni icône.
   messageWrap: {
     maxWidth: 340, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center',
-    backgroundColor: 'rgba(2,6,23,0.92)', borderRadius: 20,
+    backgroundColor: '#FFFFFF', borderRadius: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35,
     shadowRadius: 18, elevation: 12,
   },
   message: {
-    color: '#FFFFFF', fontSize: 13, fontWeight: '800', textAlign: 'center', lineHeight: 18,
+    color: '#0F172A', fontSize: 13, fontWeight: '800', textAlign: 'center', lineHeight: 18,
   },
 });

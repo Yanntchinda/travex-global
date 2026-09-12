@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, radius, shadow, TRANSPORT_MODES } from '../theme/theme';
 import { CITIES } from '../data/mockData';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 
 const FLAG = { '🇨🇲': '🇨🇲' };
 
@@ -27,10 +28,14 @@ export function TransportIcon({ transport, size = 18 }) {
 
 export function TransportBadge({ transport }) {
   const m = modeInfo(transport);
+  // En mode sombre : icône et libellé (Avion / Cargo / Terrestre) en BLANC
+  // pour rester lisibles sur les cartes foncées.
+  const { mode } = useTheme();
+  const c = mode === 'dark' ? '#FFFFFF' : m.color;
   return (
     <View style={[styles.transportBadge, { backgroundColor: m.color + '1A' }]}>
-      <Ionicons name={m.icon} size={13} color={m.color} />
-      <Text style={[styles.transportBadgeText, { color: m.color }]}>{m.key}</Text>
+      <Ionicons name={m.icon} size={13} color={c} />
+      <Text style={[styles.transportBadgeText, { color: c }]}>{m.key}</Text>
     </View>
   );
 }

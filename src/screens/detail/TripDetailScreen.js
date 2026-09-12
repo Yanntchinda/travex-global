@@ -350,19 +350,21 @@ const styles = StyleSheet.create({
   directRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: spacing.sm },
   directText: { fontSize: 13, color: colors.primary, fontWeight: '700' },
   estimatorCard: {
-    backgroundColor: '#F0F6FF', borderRadius: radius.lg, padding: spacing.lg,
-    marginBottom: spacing.md, borderWidth: 1, borderColor: '#E0EDFF',
+    // primaryLight suit le thème : bleu lavande clair en jour, bleu nuit en
+    // sombre — les textes (Tarif par Kilo, €/kg, kg au total) restent lisibles.
+    backgroundColor: colors.primaryLight, borderRadius: radius.lg, padding: spacing.lg,
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
   estHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   estLabel: { fontSize: 13, fontWeight: '800', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  estDivider: { height: 1, backgroundColor: '#E0EDFF', marginTop: spacing.md, marginBottom: spacing.md },
+  estDivider: { height: 1, backgroundColor: colors.border, marginTop: spacing.md, marginBottom: spacing.md },
   estRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   estLabelSmall: { fontSize: 13, fontWeight: '700', color: colors.text },
   estKg: { fontSize: 16, fontWeight: '900', color: colors.primary },
   estTotalRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginTop: spacing.md, backgroundColor: colors.card, borderRadius: radius.sm,
-    padding: spacing.md, borderWidth: 1, borderColor: '#E0EDFF',
+    padding: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
   estTotalLabel: { fontSize: 13, color: colors.muted, fontWeight: '600' },
   estTotal: { fontSize: 22, fontWeight: '900', color: colors.text },
