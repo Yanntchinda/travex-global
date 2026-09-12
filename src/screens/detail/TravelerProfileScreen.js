@@ -17,6 +17,7 @@ import { isOnline, subscribePresence } from '../../services/presence';
 // ---------------------------------------------------------------------------
 export default function TravelerProfileScreen({ route, navigation }) {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { traveler, travelerId } = route.params || {};
   const [ratings, setRatings] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -147,14 +148,22 @@ export default function TravelerProfileScreen({ route, navigation }) {
           )}
         </View>
 
-        <Button title={t('traveler.contact')} icon="chatbubbles-outline" onPress={contact} loading={busy} />
-        <Button
-          title={t('traveler.report')}
-          icon="flag-outline"
-          variant="outline"
-          onPress={report}
-          style={{ marginTop: spacing.md }}
-        />
+        {/* Écrire au voyageur : réservé aux comptes (invité → création de compte).
+            demandeur de kilo et voyageur vérifié peuvent contacter librement. */}
+        {user ? (
+          <Button title={t('traveler.contact')} icon="chatbubbles-outline" onPress={contact} loading={busy} />
+        ) : (
+          <Button title={t('announce.createAccountCta')} icon="person-add-outline" onPress={() => navigation.navigate('SignIn')} />
+        )}
+        {user && (
+          <Button
+            title={t('traveler.report')}
+            icon="flag-outline"
+            variant="outline"
+            onPress={report}
+            style={{ marginTop: spacing.md }}
+          />
+        )}
         <View style={{ height: 30 }} />
       </ScrollView>
     </SafeAreaView>

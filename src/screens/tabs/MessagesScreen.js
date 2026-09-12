@@ -255,13 +255,16 @@ export default function MessagesScreen({ navigation, route }) {
   }, [openConvoId, user, openConversation, navigation]);
 
   if (!user) {
+    // Messagerie : écrire aux voyageurs / expéditeurs nécessite un compte
+    // (invité : consultation des annonces uniquement).
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Text style={styles.title}>{t('msg.title')}</Text>
-        <EmptyState
+        <Gate
           icon="chatbubble-ellipses-outline"
-          title={t('msg.empty')}
-          subtitle={t('msg.emptyDesc')}
+          title={t('msg.gateTitle')}
+          subtitle={t('msg.gateDesc')}
+          onLogin={() => navigation.navigate('SignIn')}
         />
       </SafeAreaView>
     );

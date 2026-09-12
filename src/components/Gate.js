@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../theme/theme';
 import { Button } from './common';
 
-// Écran "verrou" affiché quand un visiteur (non connecté) veut accéder
-// aux détails ou publier une annonce — modèle "transparence".
-export default function Gate({ onLogin, icon = 'lock-closed-outline', title, subtitle }) {
+// Écran "verrou" affiché quand un visiteur (non connecté) veut écrire,
+// réserver ou publier — la CONSULTATION des annonces reste toujours libre.
+export default function Gate({ onLogin, icon = 'lock-closed-outline', title, subtitle, buttonLabel, hint }) {
   return (
     <View style={styles.container}>
       <View style={styles.iconWrap}>
@@ -14,8 +14,8 @@ export default function Gate({ onLogin, icon = 'lock-closed-outline', title, sub
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
-      <Button title="Créer un compte" icon="person-add-outline" onPress={onLogin} style={{ width: '100%', marginTop: spacing.lg }} />
-      <Text style={styles.hint}>Vous pouvez continuer à parcourir les annonces.</Text>
+      <Button title={buttonLabel || 'Créer un compte'} icon="person-add-outline" onPress={onLogin} style={{ width: '100%', marginTop: spacing.lg }} />
+      <Text style={styles.hint}>{hint || 'Vous pouvez continuer à parcourir les annonces.'}</Text>
     </View>
   );
 }

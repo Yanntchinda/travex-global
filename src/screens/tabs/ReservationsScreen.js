@@ -386,7 +386,7 @@ function ShipmentCard({ item, onViewQR, onChat, onScan, onEnterPin }) {
   );
 }
 
-export default function ReservationsScreen() {
+export default function ReservationsScreen({ navigation }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [items, setItems] = useState([]);
@@ -419,6 +419,22 @@ export default function ReservationsScreen() {
     { key: 'inTransit', label: t('track.inTransit') },
     { key: 'delivered', label: t('track.delivered') },
   ];
+
+  // Réservations / suivi des colis : réservés aux comptes (demandeur de kilo,
+  // voyageur vérifié). L'invité consulte librement les annonces, mais ne peut
+  // ni réserver ni suivre des colis sans créer de compte.
+  if (!user) {
+    return (
+      <SafeAreaView style={c.safe} edges={['top']}>
+        <Gate
+          icon="cube-outline"
+          title={t('booking.gateTitle')}
+          subtitle={t('booking.gateDesc')}
+          onLogin={() => navigation.navigate('SignIn')}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={c.safe} edges={['top']}>

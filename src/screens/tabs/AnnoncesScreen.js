@@ -34,10 +34,18 @@ export default function AnnoncesScreen({ navigation }) {
   }, [load, user, navigation]);
 
   if (!user) {
+    // « Mes annonces » : publier et suivre la vérification exigent un compte.
+    // Rappel de la règle : les publications des comptes non vérifiés restent
+    // « en attente de vérification » jusqu'à validation côté admin.
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Text style={styles.title}>{t('lists.mine')}</Text>
-        <EmptyState icon="list-outline" title={t('lists.empty')} subtitle={t('lists.emptyDesc')} />
+        <Gate
+          icon="list-outline"
+          title={t('lists.gateTitle')}
+          subtitle={t('lists.gateDesc')}
+          onLogin={() => navigation.navigate('SignIn')}
+        />
       </SafeAreaView>
     );
   }

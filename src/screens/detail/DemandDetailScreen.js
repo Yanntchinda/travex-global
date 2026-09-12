@@ -233,10 +233,16 @@ export default function DemandDetailScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
-      {/* Barre d'action : Fermer + Proposer mes kilos */}
+      {/* Barre d'action : Fermer + Proposer mes kilos.
+          Sans compte : la consultation de la demande reste libre, mais
+          répondre (écrire à l'expéditeur) exige la création d'un compte. */}
       <View style={styles.actionBar}>
         <Button title={t('demand.close')} variant="outline" onPress={() => navigation.goBack()} style={{ flex: 1, marginRight: spacing.sm }} />
-        <Button title={t('demand.proposeKilos')} icon="hand-left-outline" onPress={() => setShowProposal(true)} style={{ flex: 1.6, marginLeft: spacing.sm }} />
+        {user ? (
+          <Button title={t('demand.proposeKilos')} icon="hand-left-outline" onPress={() => setShowProposal(true)} style={{ flex: 1.6, marginLeft: spacing.sm }} />
+        ) : (
+          <Button title={t('announce.createAccountCta')} icon="person-add-outline" onPress={() => navigation.navigate('SignIn')} style={{ flex: 1.6, marginLeft: spacing.sm }} />
+        )}
       </View>
 
       <ProposalModal demand={detail} visible={showProposal} onClose={() => setShowProposal(false)} onSubmit={onPropose} submitting={submitting} />

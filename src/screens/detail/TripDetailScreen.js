@@ -11,16 +11,17 @@ import { PAYMENT_MODES, maskPaymentRef, getDemoTravelerMethods } from '../../dat
 import { shareListing } from '../../services/share';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import Gate from '../../components/Gate';
 import AppModal from '../../components/AppModal';
 
-function OptionSheet({ visible, onClose, onChoose, t }) {
+function OptionSheet({ visible, onClose, onChoose, t, isGuest }) {
   // « Masquer l'annonce » n'apparaît plus ici : le masquage se gère
   // uniquement depuis l'onglet « Mes annonces » du profil de l'utilisateur.
+  // Le signalement (comme tout écrit) nécessite un compte : option masquée
+  // pour les invités.
   const options = [
     { key: 'profile', icon: 'person-outline', label: t('traveler.title') },
     { key: 'share', icon: 'share-social-outline', label: t('announce.share') },
-    { key: 'report', icon: 'flag-outline', label: t('report.title'), danger: true },
+    ...(!isGuest ? [{ key: 'report', icon: 'flag-outline', label: t('report.title'), danger: true }] : []),
   ];
   return (
     <AppModal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
@@ -78,20 +79,13 @@ export default function TripDetailScreen({ route, navigation }) {
 
   if (!detail) return <Loading />;
 
-  // Modèle "transparence" : les détails nécessitent un compte.
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScreenHeader title={t('announce.details')} onBack={() => navigation.goBack()} />
-        <Gate
-          icon="lock-closed-outline"
-          title={t('announce.gate')}
-          subtitle={t('announce.gateDesc')}
-          onLogin={() => navigation.navigate('SignIn')}
-        />
-      </SafeAreaView>
-    );
-  }
+  // Règle d'accès (invité / demandeur de kilo / voyageur vérifié) :
+  //   - INVITÉ (sans compte) : peut CONSULTER les détails des annonces côté
+  //     départ (lecture seule) — mais ne peut PAS écrire au voyageur, réserver
+  //     des kilos ni noter : ces actions nécessitent la création d'un compte.
+  //   - DEMANDEUR DE KILO (expéditeur) et VOYAGEUR (vérifié ou en cours) :
+  //     accès complet aux détails + écriture, réservation et notation.
+  const isGuest = !user;
 
   const r = detail.route || {
     from: detail.from, to: detail.to,
@@ -188,6 +182,18 @@ export default function TripDetailScreen({ route, navigation }) {
       <ScreenHeader title={t('announce.details')} onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Bandeau invité : consultation libre, écriture sur compte.
+            Les détails côté départ restent consultables sans compte. */}
+        {isGuest && (
+          <View style={styles.guestBanner}>
+            <View style={styles.guestBannerHead}>
+              <Ionicons name="eye-outline" size={16} color={colors.primary} />
+              <Text style={styles.guestBannerTitle}>{t('announce.guestBanner')}</Text>
+            </View>
+            <Text style={styles.guestBannerText}>{t('announce.guestBannerDesc')}</Text>
+          </View>
+        )}
+
         {/* Transporteur — carte cliquable : ouvre le profil du voyageur */}
         <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={openTravelerProfile}>
           <View style={styles.travelerRow}>
@@ -249,19 +255,23 @@ export default function TripDetailScreen({ route, navigation }) {
                 <Text style={styles.estTotalLabel}>{t('announce.estimatedTotal')}</Text>
                 <Text style={styles.estTotal}>{total} €</Text>
               </View>
-              <Button
-                title={t('announce.bookTrip')}
-                icon="cube-outline"
-                onPress={confirmBook}
-                loading={booking}
-                style={{ marginTop: spacing.md }}
-              />
+              {/* Réserver : réservé aux comptes (invité : simulation seule). */}
+              {!isGuest && (
+                <Button
+                  title={t('announce.bookTrip')}
+                  icon="cube-outline"
+                  onPress={confirmBook}
+                  loading={booking}
+                  style={{ marginTop: spacing.md }}
+                />
+              )}
             </>
           )}
         </View>
 
-        {/* Modes de paiement acceptés par le voyageur */}
-        {!isDemande && (
+        {/* Modes de paiement acceptés par le voyageur — coordonnées réservées
+            aux comptes (invités : consultation seule, sans coordonnées). */}
+        {!isDemande && !isGuest && (
           <View style={styles.card}>
             <View style={styles.sectionTitleRow}>
               <Ionicons name="card-outline" size={20} color={colors.primary} />
@@ -322,7 +332,10 @@ export default function TripDetailScreen({ route, navigation }) {
             <Stars value={traveler.rating || 0} size={20} />
             <Text style={styles.rateScore}>{(traveler.rating || 0).toFixed(1)} / 5 · {traveler.reviews || 0} {t('rate.reviews')}</Text>
           </View>
-          {myScore != null ? (
+          {isGuest ? (
+            // Sans compte : la consultation des avis est libre, pas la notation.
+            <Text style={styles.rateHint}>{t('announce.ratingLogin')}</Text>
+          ) : myScore != null ? (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Stars value={myScore} size={22} />
@@ -368,17 +381,30 @@ export default function TripDetailScreen({ route, navigation }) {
       </ScrollView>
 
       <View style={styles.actionBar}>
-        <Button title={t('announce.contact')} variant="green" icon="chatbubbles-outline" onPress={openContact} style={{ flex: 1, marginRight: spacing.sm }} />
-        <Button
-          title={isDemande ? 'Répondre' : t('announce.bookTrip')}
-          icon={isDemande ? 'mail-outline' : 'cube-outline'}
-          onPress={isDemande ? () => navigation.navigate('Main', { screen: 'Messages' }) : confirmBook}
-          loading={booking}
-          style={{ flex: 1, marginLeft: spacing.sm }}
-        />
+        {isGuest ? (
+          // Invité : la lecture est libre, mais écrire au voyageur (comme
+          // réserver) exige la création d'un compte — modèle demandé.
+          <Button
+            title={t('announce.createAccountCta')}
+            icon="person-add-outline"
+            onPress={() => navigation.navigate('SignIn')}
+            style={{ flex: 1 }}
+          />
+        ) : (
+          <>
+            <Button title={t('announce.contact')} variant="green" icon="chatbubbles-outline" onPress={openContact} style={{ flex: 1, marginRight: spacing.sm }} />
+            <Button
+              title={isDemande ? 'Répondre' : t('announce.bookTrip')}
+              icon={isDemande ? 'mail-outline' : 'cube-outline'}
+              onPress={isDemande ? () => navigation.navigate('Main', { screen: 'Messages' }) : confirmBook}
+              loading={booking}
+              style={{ flex: 1, marginLeft: spacing.sm }}
+            />
+          </>
+        )}
       </View>
 
-      <OptionSheet visible={sheet} onClose={() => setSheet(false)} onChoose={onOption} t={t} />
+      <OptionSheet visible={sheet} onClose={() => setSheet(false)} onChoose={onOption} t={t} isGuest={isGuest} />
 
       {/* Confirmation de réservation in-app */}
       <AppModal transparent visible={!!bookedInfo} animationType="fade" onRequestClose={() => setBookedInfo(null)}>
@@ -402,6 +428,14 @@ export default function TripDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: '5%', paddingTop: spacing.lg, paddingBottom: spacing.xxl },
+  // Bandeau « mode invité » : consultation libre, actions sur compte.
+  guestBanner: {
+    backgroundColor: colors.primaryLight, borderRadius: radius.lg, padding: spacing.md,
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.primary + '35',
+  },
+  guestBannerHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  guestBannerTitle: { fontSize: 13, fontWeight: '800', color: colors.primaryDark },
+  guestBannerText: { fontSize: 13, color: colors.muted, lineHeight: 19 },
   card: {
     backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
