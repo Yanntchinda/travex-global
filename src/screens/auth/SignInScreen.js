@@ -252,8 +252,12 @@ export default function SignInScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Carte */}
+          {/* Carte — arrière-plan photo (voyageur + avion) sous un voile
+              blanc léger « verre dépoli » : la photo est bien visible et les
+              champs / textes sombres restent parfaitement lisibles. */}
           <View style={styles.card}>
+            <Image source={require('../../../assets/hero/login-bg.jpg')} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.72)' }]} />
             {/* Onglets Connexion / Inscription */}
             <View style={styles.tabs}>
               <TouchableOpacity style={[styles.tabBtn, isLogin && styles.tabBtnActive]} onPress={() => switchTab('login')} activeOpacity={0.85}>
@@ -427,7 +431,7 @@ const styles = StyleSheet.create({
   logo: { width: 170, height: 170, borderRadius: 34 },
   subPill: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 12, backgroundColor: 'rgba(2,6,23,0.6)', borderWidth: 1, borderColor: 'rgba(56,189,248,0.25)', paddingHorizontal: 15, paddingVertical: 6, borderRadius: 999 },
   subPillText: { color: '#bae6fd', fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
-  card: { backgroundColor: '#fff', borderRadius: 26, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 30 }, shadowOpacity: 0.5, shadowRadius: 60, elevation: 12 },
+  card: { backgroundColor: 'transparent', borderRadius: 26, padding: 20, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 30 }, shadowOpacity: 0.5, shadowRadius: 60, elevation: 12 },
   tabs: { flexDirection: 'row', backgroundColor: '#F1F5F9', padding: 6, borderRadius: 18, marginBottom: 20 },
   tabBtn: { flex: 1, paddingVertical: 11, borderRadius: 13, alignItems: 'center' },
   tabBtnActive: { backgroundColor: '#fff', shadowColor: '#0B2545', shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
