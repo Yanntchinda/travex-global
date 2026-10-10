@@ -1,0 +1,217 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing, radius, shadow } from '../../theme/theme';
+import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { EmptyState } from '../../components/common';
+import { getConversations, sendChatMessage } from '../../services/supabase';
+
+function Conversation({ convo, onBack }) {
+  const { t } = useLanguage();
+  const [messages, setMessages] = useState(convo.messages || []);
+  const [draft, setDraft] = useState('');
+  const [seen, setSeen] = useState(false); // accusé de lecture : "vu" par l'autre
+  const listRef = useRef(null);
+
+  // Simulation : une fois la conversation ouverte, l'autre a lu vos messages.
+  useEffect(() => {
+    const timer = setTimeout(() => setSeen(true), 900);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const send = async () => {
+    const text = draft.trim();
+    if (!text) return;
+    const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const msg = { id: 'me' + Date.now(), from: 'me', text, time, seen: true };
+    setMessages((prev) => [...prev, msg]);
+    setDraft('');
+    // Notifie + persiste (temps réel).
+    await sendChatMessage({ convoId: convo.id, from: 'me', text, name: convo.name });
+  };
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.chatHeader}>
+        <TouchableOpacity onPress={onBack} style={styles.chatBack}>
+          <Ionicons name="arrow-back" size={22} color={colors.primaryDark} />
+        </TouchableOpacity>
+        <View style={styles.chatAvatar}><Text style={styles.chatAvatarText}>{convo.initials || '?'}</Text></View>
+        <View style={{ flex: 1, marginLeft: spacing.sm }}>
+          <Text style={styles.chatName}>{convo.name}</Text>
+          <Text style={styles.chatStatus}><View style={styles.onlineDot} /> {t('msg.online')}</Text>
+        </View>
+        <Ionicons name="call-outline" size={20} color={colors.primary} />
+      </View>
+
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <FlatList
+          ref={listRef}
+          data={messages}
+          keyExtractor={(m) => m.id}
+          contentContainerStyle={styles.chatList}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+          renderItem={({ item }) => {
+            const mine = item.from === 'me';
+            return (
+              <View style={[styles.bubble, mine ? styles.bubbleMe : styles.bubbleThem]}>
+                <Text style={[styles.bubbleText, mine && { color: '#fff' }]}>{item.text}</Text>
+                <View style={styles.bubbleMeta}>
+                  <Text style={[styles.bubbleTime, mine && { color: 'rgba(255,255,255,0.8)' }]}>{item.time}</Text>
+                  {mine && (
+                    <Ionicons
+                      name={(item.seen ?? seen) ? 'checkmark-done' : 'checkmark'}
+                      size={14}
+                      color={(item.seen ?? seen) ? '#BDE3FF' : 'rgba(255,255,255,0.8)'}
+                    />
+                  )}
+                </View>
+              </View>
+            );
+          }}
+        />
+        <View style={styles.inputRow}>
+          <TextInput
+            style={styles.input}
+            placeholder={t('msg.placeholder')}
+            placeholderTextColor="#9AA3AF"
+            value={draft}
+            onChangeText={setDraft}
+            onSubmitEditing={send}
+            returnKeyType="send"
+          />
+          <TouchableOpacity style={styles.sendBtn} onPress={send}>
+            <Ionicons name="send" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+export default function MessagesScreen({ navigation, route }) {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  const [openChat, setOpenChat] = useState(null);
+  const [conversations, setConversations] = useState([]);
+
+  const load = useCallback(async () => {
+    const list = await getConversations();
+    setConversations(list || []);
+  }, []);
+
+  // Recharge les conversations à chaque retour sur l'onglet (réservations/propositions/…).
+  useEffect(() => {
+    if (!user) return;
+    load();
+    const unsub = navigation.addListener('focus', () => load());
+    return unsub;
+  }, [load, user, navigation]);
+
+  const openConversation = useCallback(async (id) => {
+    const list = await getConversations();
+    setConversations(list || []);
+    const convo = (list || []).find((c) => c.id === id);
+    if (convo) {
+      setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+      setOpenChat(convo);
+    } else {
+      setOpenChat({ id, name: 'Correspondant', initials: 'C', messages: [] });
+    }
+  }, []);
+
+  // Ouvre directement la conversation demandée par la navigation (bouton "Contacter").
+  const openConvoId = route?.params?.openConvoId;
+  useEffect(() => {
+    if (openConvoId && user) {
+      openConversation(openConvoId);
+      navigation.setParams?.({ openConvoId: undefined });
+    }
+  }, [openConvoId, user, openConversation, navigation]);
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <Text style={styles.title}>{t('msg.title')}</Text>
+        <EmptyState
+          icon="chatbubble-ellipses-outline"
+          title={t('msg.empty')}
+          subtitle={t('msg.emptyDesc')}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  if (openChat) {
+    return <Conversation convo={openChat} onBack={() => { setOpenChat(null); load(); }} />;
+  }
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>{t('msg.title')}</Text>
+        <Ionicons name="create-outline" size={22} color={colors.primary} />
+      </View>
+      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        {conversations.length === 0 && (
+          <EmptyState icon="chatbubble-ellipses-outline" title={t('msg.empty')} subtitle={t('msg.emptyDesc')} />
+        )}
+        {conversations.map((c) => (
+          <TouchableOpacity key={c.id} style={styles.convo} onPress={() => openConversation(c.id)} activeOpacity={0.85}>
+            <View style={styles.convoAvatar}>
+              <Text style={styles.convoAvatarText}>{c.initials || 'C'}</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: spacing.md }}>
+              <Text style={styles.convoName}>{c.name}</Text>
+              <Text style={styles.convoLast} numberOfLines={1}>{c.last}</Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.convoTime}>{c.time}</Text>
+              {c.unread > 0 && <View style={styles.unread}><Text style={styles.unreadText}>{c.unread}</Text></View>}
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  title: { fontSize: 22, fontWeight: '800', color: colors.primaryDark, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  list: { padding: spacing.lg, paddingTop: 0 },
+  convo: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white,
+    borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm, ...shadow.card,
+  },
+  convoAvatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  convoAvatarText: { color: colors.primary, fontWeight: '800', fontSize: 17 },
+  convoName: { fontSize: 16, fontWeight: '700', color: colors.text },
+  convoLast: { fontSize: 13, color: colors.muted, marginTop: 3 },
+  convoTime: { fontSize: 12, color: colors.muted },
+  unread: { marginTop: 6, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  unreadText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  chatHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  chatBack: { padding: 4, marginRight: spacing.sm },
+  chatAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  chatAvatarText: { color: colors.primary, fontWeight: '800' },
+  chatName: { fontSize: 16, fontWeight: '700', color: colors.text },
+  chatStatus: { fontSize: 12, color: colors.green, flexDirection: 'row', alignItems: 'center' },
+  onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green, marginRight: 4 },
+  chatList: { padding: spacing.lg },
+  bubble: { maxWidth: '78%', borderRadius: 18, padding: spacing.md, marginBottom: spacing.sm },
+  bubbleMe: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 4 },
+  bubbleThem: { alignSelf: 'flex-start', backgroundColor: colors.white, borderBottomLeftRadius: 4, ...shadow.card },
+  bubbleText: { fontSize: 15, color: colors.text, lineHeight: 21 },
+  bubbleTime: { fontSize: 11, color: colors.muted, marginRight: 4 },
+  bubbleMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border },
+  input: { flex: 1, backgroundColor: colors.inputBg, borderRadius: 22, paddingHorizontal: spacing.lg, height: 46, fontSize: 15, color: colors.text },
+  sendBtn: { marginLeft: spacing.sm, width: 46, height: 46, borderRadius: 23, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+});
